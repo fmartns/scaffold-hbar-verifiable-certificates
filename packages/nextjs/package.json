@@ -1,0 +1,34 @@
+{
+  "name": "@sh/nextjs",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "next build",
+    "check-types": "tsc --noEmit --incremental",
+    "dev": "next dev",
+    "format": "prettier --write . '!(node_modules|.next)/**/*'",
+    "lint": "eslint . --max-warnings=0",
+    "lint-staged": "eslint --max-warnings=0 --no-warn-ignored",
+    "serve": "next start",
+    "start": "next dev"
+  },
+  "dependencies": {
+    "@sh/sdk": "workspace:*",
+    "next": "^15.2.8",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/node": "^20.19.8",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.23.0",
+    "eslint-config-next": "^15.2.3",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.4",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "yarn@3.2.3"
+}

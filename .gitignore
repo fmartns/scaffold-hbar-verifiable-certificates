@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+
+# yarn (the pinned release in .yarn/releases is part of the template)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# env files: only the example is versioned
+.env
+.env.*
+!.env.example
+
+# eslint
+.eslintcache
+
+# misc
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# build output
+dist
+*.tsbuildinfo

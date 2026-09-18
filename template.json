@@ -1,4 +1,6 @@
 {
+  "name": "verifiable-settlement",
+  "description": "Verifiable event-driven settlement on Hedera: oracle attestation, HCS evidence, a Solidity SettlementRouter, HTS credit and Mirror Node audit. Next.js + Hardhat + a shared TypeScript SDK.",
   "create-scaffold-hbar": {
     "capabilities": {
       "frontend": ["nextjs-app"],
@@ -7,7 +9,72 @@
     },
     "defaults": {
       "frontend": "nextjs-app",
-      "solidityFramework": "hardhat"
+      "solidityFramework": "hardhat",
+      "packageManager": "yarn"
+    },
+    "envVars": [
+      {
+        "key": "HEDERA_NETWORK",
+        "description": "Network the app targets: testnet, mainnet or local. Defaults to testnet when empty."
+      },
+      {
+        "key": "HEDERA_RPC_URL",
+        "description": "JSON-RPC relay URL for the selected network. Empty uses the public Hashio endpoint, which is for development and testing only."
+      },
+      {
+        "key": "HEDERA_MIRROR_NODE_URL",
+        "description": "Mirror Node REST URL for the selected network. Empty uses the public Hedera Mirror Node."
+      },
+      {
+        "key": "HEDERA_OPERATOR_ID",
+        "description": "Server-side operator account ID (0.0.x) that publishes HCS messages and manages HTS."
+      },
+      {
+        "key": "HEDERA_OPERATOR_KEY",
+        "description": "Server-side operator private key. Secret: never commit it and never expose it to the browser."
+      },
+      {
+        "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
+        "description": "Encrypted deployer key written by the account script. Do not fill it manually."
+      },
+      {
+        "key": "ORACLE_BASE_URL",
+        "description": "Base URL of the oracle provider."
+      },
+      {
+        "key": "ORACLE_API_KEY",
+        "description": "API key of the oracle provider, when the provider requires one."
+      }
+    ],
+    "outro": {
+      "sections": [
+        {
+          "title": "Next steps",
+          "steps": [
+            {
+              "label": "Check your environment",
+              "command": "{run:doctor}"
+            },
+            {
+              "label": "Create your local environment file",
+              "command": "cp .env.example .env",
+              "text": "Fill in only what you need. The file is git-ignored. Never commit keys."
+            },
+            {
+              "label": "Fund a testnet account",
+              "url": "https://portal.hedera.com/faucet"
+            },
+            {
+              "label": "Start the app",
+              "command": "{run:dev}"
+            },
+            {
+              "label": "Run the full local check",
+              "command": "{run:check}"
+            }
+          ]
+        }
+      ]
     }
   }
 }
