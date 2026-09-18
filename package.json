@@ -1,0 +1,57 @@
+{
+  "name": "scaffold-hbar-verifiable-settlement",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "workspaces": {
+    "packages": [
+      "packages/hardhat",
+      "packages/nextjs",
+      "packages/sdk"
+    ]
+  },
+  "scripts": {
+    "dev": "yarn next:dev",
+    "start": "yarn next:start",
+    "serve": "yarn next:serve",
+    "build": "yarn sdk:build && yarn hardhat:compile && yarn next:build",
+    "lint": "yarn sdk:lint && yarn hardhat:lint && yarn next:lint",
+    "check-types": "yarn sdk:check-types && yarn hardhat:check-types && yarn next:check-types",
+    "test": "yarn sdk:test && yarn hardhat:test",
+    "check": "yarn lint && yarn check-types && yarn test",
+    "format": "yarn sdk:format && yarn hardhat:format && yarn next:format",
+    "doctor": "node scripts/doctor.mjs",
+    "hardhat:check-types": "yarn workspace @sh/hardhat check-types",
+    "hardhat:clean": "yarn workspace @sh/hardhat clean",
+    "hardhat:compile": "yarn workspace @sh/hardhat compile",
+    "hardhat:format": "yarn workspace @sh/hardhat format",
+    "hardhat:lint": "yarn workspace @sh/hardhat lint",
+    "hardhat:lint-staged": "yarn workspace @sh/hardhat lint-staged",
+    "hardhat:test": "yarn workspace @sh/hardhat test",
+    "next:build": "yarn workspace @sh/nextjs build",
+    "next:check-types": "yarn workspace @sh/nextjs check-types",
+    "next:dev": "yarn workspace @sh/nextjs dev",
+    "next:format": "yarn workspace @sh/nextjs format",
+    "next:lint": "yarn workspace @sh/nextjs lint",
+    "next:serve": "yarn workspace @sh/nextjs serve",
+    "next:start": "yarn workspace @sh/nextjs start",
+    "sdk:build": "yarn workspace @sh/sdk build",
+    "sdk:check-types": "yarn workspace @sh/sdk check-types",
+    "sdk:format": "yarn workspace @sh/sdk format",
+    "sdk:lint": "yarn workspace @sh/sdk lint",
+    "sdk:lint-staged": "yarn workspace @sh/sdk lint-staged",
+    "sdk:test": "yarn workspace @sh/sdk test",
+    "postinstall": "husky",
+    "precommit": "lint-staged",
+    "lint-staged": "lint-staged",
+    "next:lint-staged": "yarn workspace @sh/nextjs lint-staged"
+  },
+  "packageManager": "yarn@3.2.3",
+  "devDependencies": {
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10"
+  },
+  "engines": {
+    "node": ">=20.18.3"
+  }
+}
