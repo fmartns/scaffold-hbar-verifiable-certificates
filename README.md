@@ -30,3 +30,5 @@ O oracle normaliza e assina/atesta o dado externo. O hash e metadados auditávei
 Consulte [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 
 Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submissão: [docs/bounty-rules.md](docs/bounty-rules.md).
+
+Benchmark de DX em scaffolds multi-chain e requisitos para #4, #24, #11 e #12: [docs/dx-benchmark.md](docs/dx-benchmark.md).
