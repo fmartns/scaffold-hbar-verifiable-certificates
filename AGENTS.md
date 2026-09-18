@@ -9,6 +9,12 @@
 - HCS publications must persist transaction ID and HashScan URL.
 - HTS operations must be idempotent and validate token/account associations.
 - Mirror Node reads are eventual-consistency aware.
+- Settlement identity, idempotency and replay rules are normative in `docs/architecture.md` (ADR-001). Never use a payload hash, a signature or a nonce as the idempotency key: it is `eventKey` (ADR §4.3).
+- `externalEventId` must be a pure, deterministic function of the event's identifying fields only (ADR §4.4, R1–R6). Never hash JSON.
+- HCS is evidence, not validity. The contract cannot read HCS; never present `HcsRef` as verified on-chain.
+- Publish to HCS and capture the consensus receipt **before** releasing an attestation for settlement (ADR D11).
+- Every HTS response code must be checked (`SUCCESS = 22`); any other value reverts the whole settlement.
+- No role may settle, mint or alter a processed record (ADR D12).
 - External integrations use an interface, timeout, validation and deterministic test fixture.
 
 ## Commands

@@ -488,7 +488,7 @@ HashScan por **um** módulo de links (REQ-11-03), em toda etapa concluída (REQ-
 | # | Item | Como resolver |
 |---|---|---|
 | NV-1 | `eth_call` do relay reflete chamadas ao HTS (`0x167`) e permite simular o `SettlementRouter` | Teste no #9 antes de REQ-12-04 |
-| NV-2 | Como falhas HTS chegam ao contrato (código de retorno vs `revert`) | Teste no #7; define o desenho de erros de REQ-24-03 |
+| NV-2 | ~~Como falhas HTS chegam ao contrato~~ **Resolvido** pelo ADR-001 ([architecture.md](architecture.md), P1/P2): o precompile HTS devolve `responseCode` (o contrato deve checar e reverter) e efeitos HTS são revertidos com o frame do contrato (HIP-206). O erro de contrato é `HtsFailed(op, code)`; falta apenas observar em Testnet (experimento X-02) | Alimenta REQ-24-03 |
 | NV-3 | Formas de URL do HashScan aceitas (`/tx/` vs `/transaction/`; hash vs Transaction ID) | Abrir manualmente exemplos de Testnet antes de fixar REQ-11-03 |
 | NV-4 | Se o schema de `template.json` do CSH é importável como pacote | Inspecionar o pacote npm publicado; senão, cópia versionada |
 | NV-5 | Códigos do relay variam por versão do Hashio | `classifyError` por código **e** mensagem + fallback bruto |
