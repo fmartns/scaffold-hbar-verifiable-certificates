@@ -45,7 +45,8 @@
     "precommit": "lint-staged",
     "lint-staged": "lint-staged",
     "next:lint-staged": "yarn workspace @sh/nextjs lint-staged",
-    "setup": "node scripts/doctor.mjs && yarn workspace @sh/sdk setup"
+    "setup": "node scripts/doctor.mjs && yarn workspace @sh/sdk setup",
+    "hcs:topic": "yarn workspace @sh/sdk hcs:topic"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
