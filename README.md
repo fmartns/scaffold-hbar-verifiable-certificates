@@ -40,13 +40,14 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 |---|---|
 | `yarn install` | Instala todas as dependências |
 | `yarn doctor` | Verifica Node, Yarn e `.env` |
+| `yarn setup` | Valida rede, conta e saldo Hedera (`cp .env.example .env` antes); encerra com erro claro se o ambiente for inválido |
 | `yarn dev` (ou `yarn start`) | Sobe o app Next.js em modo desenvolvimento |
 | `yarn build` | Compila SDK, contratos e app |
 | `yarn lint` | ESLint em todos os packages, sem warnings |
 | `yarn check` | `lint` + `check-types` + `test` (o que a CI executa) |
 | `yarn test` | Testes do SDK e dos contratos |
 
-Planejados nas issues seguintes: `yarn setup`, `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.
+Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.
 
 Consulte [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 
