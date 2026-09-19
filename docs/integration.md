@@ -41,3 +41,13 @@ Things worth knowing:
 - **Nothing sensitive leaves the module.** No result contains a private key; URLs are reduced to their origin; the Hedera SDK's own errors are discarded because they echo the rejected input.
 - The minimum balances are starting points, to be tuned when the real cost of the deployment flow is measured (#18).
 - The deployer account (`DEPLOYER_PRIVATE_KEY_ENCRYPTED`) needs a password to decrypt, so it is not validated here.
+
+## HCS evidence publisher
+
+`createHcsPublisherFromEnv` / `createHcsPublisher` in `@sh/sdk` publish the settlement attestation to the configured HCS topic and return what is needed to persist and correlate it (transaction id, `HcsRef` claim, HashScan link, audit metadata). It builds on this validator: `preflightHcsPublisher` runs `validateHederaEnvironment` first, then checks the topic.
+
+The envelope schema (v1), identifiers, error codes and retry policy are specified in [hcs-envelope.md](hcs-envelope.md). It is a stable interface: #10 reads messages with `decodeMessage`, #12 renders `PublishSuccess` and `HcsPublishFailure`, and the oracle (#8) signs with `SETTLEMENT_EVENT_TYPES`. None of them may define another format.
+
+Configuration: `HEDERA_HCS_TOPIC_ID` and `HEDERA_SETTLEMENT_ROUTER_ADDRESS` (required), `HEDERA_HCS_PUBLISH_TIMEOUT_MS` (optional).
+
+`yarn hcs:topic` creates the evidence topic (submitKey = operator key) and prints `HEDERA_HCS_TOPIC_ID`; see [hcs-envelope.md](hcs-envelope.md#create-the-topic-with-a-command).
