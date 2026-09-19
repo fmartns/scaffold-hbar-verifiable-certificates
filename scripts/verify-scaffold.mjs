@@ -100,6 +100,22 @@ expect(
   "initial git commit created",
 );
 
+step("Run yarn setup without credentials: it must fail cleanly and never print secrets");
+{
+  const clean = { ...process.env };
+  for (const name of [
+    "HEDERA_NETWORK",
+    "HEDERA_OPERATOR_ID",
+    "HEDERA_OPERATOR_KEY",
+    "HEDERA_RPC_URL",
+    "HEDERA_MIRROR_NODE_URL",
+  ])
+    delete clean[name];
+  const setup = spawnSync("yarn", ["setup"], { cwd: dir, env: clean, encoding: "utf8" });
+  expect(setup.status === 1, `yarn setup exits 1 without credentials (got ${setup.status})`);
+  expect(/MISSING_ENV/.test(setup.stdout), "yarn setup names the missing variables");
+}
+
 step("Run the project contracts (lint, types, tests, build)");
 for (const script of ["lint", "check-types", "test", "build"]) run("yarn", [script], { cwd: dir });
 

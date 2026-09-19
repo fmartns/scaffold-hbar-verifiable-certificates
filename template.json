@@ -3,9 +3,15 @@
   "description": "Verifiable event-driven settlement on Hedera: oracle attestation, HCS evidence, a Solidity SettlementRouter, HTS credit and Mirror Node audit. Next.js + Hardhat + a shared TypeScript SDK.",
   "create-scaffold-hbar": {
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["hardhat"],
-      "packageManager": ["yarn"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "hardhat"
+      ],
+      "packageManager": [
+        "yarn"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",
@@ -27,11 +33,15 @@
       },
       {
         "key": "HEDERA_OPERATOR_ID",
-        "description": "Server-side operator account ID (0.0.x) that publishes HCS messages and manages HTS."
+        "description": "Server-side operator account ID (0.0.x) that publishes HCS messages and manages HTS. Required by yarn setup."
       },
       {
         "key": "HEDERA_OPERATOR_KEY",
-        "description": "Server-side operator private key. Secret: never commit it and never expose it to the browser."
+        "description": "Private key of the operator account (hex). Required by yarn setup. Secret: never commit it and never expose it to the browser."
+      },
+      {
+        "key": "HEDERA_MIN_BALANCE_HBAR",
+        "description": "Minimum operator balance in HBAR that yarn setup requires. Empty uses the default for the selected network (20 on testnet, 10 on mainnet)."
       },
       {
         "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
@@ -52,17 +62,17 @@
           "title": "Next steps",
           "steps": [
             {
-              "label": "Check your environment",
-              "command": "{run:doctor}"
-            },
-            {
               "label": "Create your local environment file",
               "command": "cp .env.example .env",
-              "text": "Fill in only what you need. The file is git-ignored. Never commit keys."
+              "text": "Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY. The file is git-ignored. Never commit keys."
             },
             {
               "label": "Fund a testnet account",
               "url": "https://portal.hedera.com/faucet"
+            },
+            {
+              "label": "Validate the environment (network, account, balance)",
+              "command": "{run:setup}"
             },
             {
               "label": "Start the app",

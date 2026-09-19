@@ -11,6 +11,7 @@
     "format": "prettier --write './**/*.ts'",
     "lint": "eslint --max-warnings=0",
     "lint-staged": "eslint --no-warn-ignored",
+    "setup": "tsx cli/setup.ts",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -22,7 +23,11 @@
     "eslint-plugin-prettier": "~5.2.4",
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
+    "tsx": "^4.19.0",
     "typescript": "^5.8.2",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@hiero-ledger/sdk": "^2.80.0"
   }
 }
