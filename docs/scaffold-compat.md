@@ -125,6 +125,7 @@ Behavior of the current CLI takes precedence; each divergence is recorded, not r
 │   ├── nextjs/           @sh/nextjs    app/ components/ config/ hooks/ services/
 │   └── sdk/              @sh/sdk       hedera/ integrations/ generated/ + index.ts
 └── scripts/              doctor.mjs · validate-template.mjs · verify-scaffold.mjs
+                          (packages/sdk/cli/setup.ts is the `yarn setup` entry point)
 ```
 
 - **One `.env` at the repository root** feeds every workspace (`hardhat.config.ts` loads it with `dotenv`; `next.config.ts` with `@next/env`). Only `NEXT_PUBLIC_*` variables reach the browser; secrets must never use that prefix.
@@ -148,10 +149,11 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `test` | `sdk:test` (Vitest) → `hardhat:test` | `test:integration` / `test:e2e` (#13, #15) get their own scripts |
 | `check` | `lint` → `check-types` → `test` | **The script #14 runs.** Must not need network or secrets |
 | `format` | prettier on the three packages | Required by the CLI (IR-7); already-formatted files produce no diff |
-| `doctor` | Checks Node ≥ `engines.node`, Yarn, `.env` presence | Grows with #5 (account/network/balance) |
+| `doctor` | Checks Node ≥ `engines.node`, Yarn, `.env` presence. Prints to stderr | — |
+| `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
 | `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` mirror the base scaffold naming | The CLI's outro/prune logic relies on this naming |
 
-Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `setup` (#5), `deploy`, `verify:testnet` (#9/#18), `test:integration` (#13), `test:e2e` (#15).
+Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `deploy`, `verify:testnet` (#9/#18), `test:integration` (#13), `test:e2e` (#15).
 
 ### 6.3 Deliberate differences from the base scaffold
 
