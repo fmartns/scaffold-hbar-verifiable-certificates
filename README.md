@@ -41,6 +41,7 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn install` | Instala todas as dependências |
 | `yarn doctor` | Verifica Node, Yarn e `.env` |
 | `yarn setup` | Valida rede, conta e saldo Hedera (`cp .env.example .env` antes); encerra com erro claro se o ambiente for inválido |
+| `yarn hcs:topic` | Cria o tópico HCS de evidência (`submitKey` = chave do operador). Mostra o que será criado e o custo estimado e pergunta `[Y/n]` antes; `--write` grava `HEDERA_HCS_TOPIC_ID` no `.env`, `--smoke-test` publica e lê de volta uma mensagem, `--yes` dispensa a pergunta. Não cria um segundo tópico se já houver um válido |
 | `yarn dev` (ou `yarn start`) | Sobe o app Next.js em modo desenvolvimento |
 | `yarn build` | Compila SDK, contratos e app |
 | `yarn lint` | ESLint em todos os packages, sem warnings |
@@ -52,5 +53,7 @@ Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yar
 Consulte [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 
 Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submissão: [docs/bounty-rules.md](docs/bounty-rules.md).
+
+Envelope de evidência HCS (schema estável v1) e serviço de publicação: [docs/hcs-envelope.md](docs/hcs-envelope.md). Fluxo: `yarn setup` → `yarn hcs:topic --write --smoke-test` → `HCS_INTEGRATION=1 yarn workspace @sh/sdk test:integration` (teste opcional na testnet).
 
 Benchmark de DX em scaffolds multi-chain e requisitos para #4, #24, #11 e #12: [docs/dx-benchmark.md](docs/dx-benchmark.md).
