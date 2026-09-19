@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Verifies the local toolchain before any workspace command runs. Exits 1 on a blocking problem.
+// Diagnostics go to stderr so that commands which chain it (yarn setup --json) keep a clean stdout.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -18,10 +19,10 @@ const atLeast = (actual, minimum) => {
   return true;
 };
 
-console.log("Environment check");
+console.error("Environment check");
 const problems = [];
 const warnings = [];
-const ok = message => console.log(`  ok    ${message}`);
+const ok = message => console.error(`  ok    ${message}`);
 
 if (!minNode) {
   problems.push('package.json has no "engines.node"; the minimum Node.js version is undefined.');
@@ -48,6 +49,6 @@ if (existsSync(path.join(root, ".env"))) {
   warnings.push("No .env file. Run `cp .env.example .env` and fill in what you need; the app defaults to testnet.");
 }
 
-for (const w of warnings) console.log(`  warn  ${w}`);
-for (const p of problems) console.log(`  FAIL  ${p}`);
+for (const w of warnings) console.error(`  warn  ${w}`);
+for (const p of problems) console.error(`  FAIL  ${p}`);
 process.exit(problems.length > 0 ? 1 : 0);

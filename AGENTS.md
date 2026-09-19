@@ -15,11 +15,12 @@
 - Publish to HCS and capture the consensus receipt **before** releasing an attestation for settlement (ADR D11).
 - Every HTS response code must be checked (`SUCCESS = 22`); any other value reverts the whole settlement.
 - No role may settle, mint or alter a processed record (ADR D12).
+- Hedera environment validation has one source: `validateHederaEnvironment` in `@sh/sdk`. The dashboard, CI and scripts import it; never re-implement it. It must never put a private key, or a URL beyond its origin, in a message, log or result.
 - External integrations use an interface, timeout, validation and deterministic test fixture.
 
 ## Commands
-Available: `yarn doctor`, `yarn dev` (`yarn start` is the same dev server; `yarn serve` is production), `yarn build`, `yarn lint`, `yarn check-types`, `yarn test`, `yarn check` (lint + types + test; this is what CI runs), `yarn format`. Per-package scripts are `hardhat:*`, `next:*` and `sdk:*`.
-Planned: `yarn setup`, `yarn test:integration`, `yarn test:e2e`, `yarn verify:testnet`.
+Available: `yarn doctor`, `yarn setup` (validates network, account and balance; exit 0 valid, 1 invalid, 2 network unreachable; `--json` for machines), `yarn dev` (`yarn start` is the same dev server; `yarn serve` is production), `yarn build`, `yarn lint`, `yarn check-types`, `yarn test`, `yarn check` (lint + types + test; this is what CI runs), `yarn format`. Per-package scripts are `hardhat:*`, `next:*` and `sdk:*`.
+Planned: `yarn test:integration`, `yarn test:e2e`, `yarn verify:testnet`.
 
 Structure rules (see `docs/scaffold-compat.md`): workspaces are named `@sh/hardhat`, `@sh/nextjs`, `@sh/sdk` and the CLI depends on that naming. `@sh/sdk` is consumed as TypeScript source. Chain ids and RPC/Mirror/HashScan URLs live only in `packages/sdk/hedera/networks.ts`. One `.env` at the repository root; secrets never use the `NEXT_PUBLIC_` prefix. `.env.example` is generated from `template.json` (`envVars`) by the CLI; keep them equal (`node scripts/validate-template.mjs`). Run commands with the `--` form: `npm create scaffold-hbar@latest -- --template <owner>/<repo>`.
 
