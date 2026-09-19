@@ -1,0 +1,33 @@
+{
+  "name": "@sh/sdk",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Hedera, oracle and Mirror Node adapters shared by the contracts and the frontend. Consumed as TypeScript source by the other workspaces.",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "format": "prettier --write './**/*.ts'",
+    "lint": "eslint --max-warnings=0",
+    "lint-staged": "eslint --no-warn-ignored",
+    "setup": "tsx cli/setup.ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.8",
+    "@typescript-eslint/eslint-plugin": "~8.27.0",
+    "@typescript-eslint/parser": "~8.27.0",
+    "eslint": "~9.23.0",
+    "eslint-config-prettier": "~10.1.1",
+    "eslint-plugin-prettier": "~5.2.4",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@hiero-ledger/sdk": "^2.80.0"
+  }
+}

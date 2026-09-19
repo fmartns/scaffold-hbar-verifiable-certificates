@@ -1,13 +1,90 @@
 {
+  "name": "verifiable-settlement",
+  "description": "Verifiable event-driven settlement on Hedera: oracle attestation, HCS evidence, a Solidity SettlementRouter, HTS credit and Mirror Node audit. Next.js + Hardhat + a shared TypeScript SDK.",
   "create-scaffold-hbar": {
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["hardhat"],
-      "packageManager": ["yarn"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "hardhat"
+      ],
+      "packageManager": [
+        "yarn"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",
-      "solidityFramework": "hardhat"
+      "solidityFramework": "hardhat",
+      "packageManager": "yarn"
+    },
+    "envVars": [
+      {
+        "key": "HEDERA_NETWORK",
+        "description": "Network the app targets: testnet, mainnet or local. Defaults to testnet when empty."
+      },
+      {
+        "key": "HEDERA_RPC_URL",
+        "description": "JSON-RPC relay URL for the selected network. Empty uses the public Hashio endpoint, which is for development and testing only."
+      },
+      {
+        "key": "HEDERA_MIRROR_NODE_URL",
+        "description": "Mirror Node REST URL for the selected network. Empty uses the public Hedera Mirror Node."
+      },
+      {
+        "key": "HEDERA_OPERATOR_ID",
+        "description": "Server-side operator account ID (0.0.x) that publishes HCS messages and manages HTS. Required by yarn setup."
+      },
+      {
+        "key": "HEDERA_OPERATOR_KEY",
+        "description": "Private key of the operator account (hex). Required by yarn setup. Secret: never commit it and never expose it to the browser."
+      },
+      {
+        "key": "HEDERA_MIN_BALANCE_HBAR",
+        "description": "Minimum operator balance in HBAR that yarn setup requires. Empty uses the default for the selected network (20 on testnet, 10 on mainnet)."
+      },
+      {
+        "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
+        "description": "Encrypted deployer key written by the account script. Do not fill it manually."
+      },
+      {
+        "key": "ORACLE_BASE_URL",
+        "description": "Base URL of the oracle provider."
+      },
+      {
+        "key": "ORACLE_API_KEY",
+        "description": "API key of the oracle provider, when the provider requires one."
+      }
+    ],
+    "outro": {
+      "sections": [
+        {
+          "title": "Next steps",
+          "steps": [
+            {
+              "label": "Create your local environment file",
+              "command": "cp .env.example .env",
+              "text": "Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY. The file is git-ignored. Never commit keys."
+            },
+            {
+              "label": "Fund a testnet account",
+              "url": "https://portal.hedera.com/faucet"
+            },
+            {
+              "label": "Validate the environment (network, account, balance)",
+              "command": "{run:setup}"
+            },
+            {
+              "label": "Start the app",
+              "command": "{run:dev}"
+            },
+            {
+              "label": "Run the full local check",
+              "command": "{run:check}"
+            }
+          ]
+        }
+      ]
     }
   }
 }

@@ -282,8 +282,8 @@ Nota: a transação testnet do gate e a profundidade de serviços da rubrica sã
 
 | ID | Assunto | O que dizem as fontes | Postura do checklist **[DERIVADO]** |
 |---|---|---|---|
-| **D-01** | **`template.json` — obrigatoriedade e validade** | S1 (gate): "`template.json` manifest present and valid" → **obrigatório e válido**. S2: descreve o manifesto como **opcional** ("optional manifest"). S4 (`types.ts`): o schema Zod exige `name` (string não vazia); sem `name` o parse falha; S4 (`template-capabilities.ts`): manifesto ausente **ou** inválido → o CLI **cai silenciosamente em capacidades permissivas padrão** (nenhum erro). S1 **não define** "valid". | Tratar como obrigatório (S1) e validar contra o schema de S4 (incluindo `name`). |
-| **D-02** | **Forma do comando** | S1: `npm create scaffold-hbar@latest --template owner/repo` (sem `--`). S2: `npm create scaffold-hbar@latest -- --template ...` (com `--`). S4: `npx create-scaffold-hbar@latest --template ...`. O README deste repositório usa a forma com `--`. Repasse de flags por `npm create` sem `--` **não foi verificado** aqui. | Testar **todas** as formas citadas; a forma literal de S1 deve funcionar ou a divergência deve ser reportada. |
+| **D-01** | **`template.json` — obrigatoriedade e validade** | S1 (gate): "`template.json` manifest present and valid" → **obrigatório e válido**. S2: descreve o manifesto como **opcional** ("optional manifest"). S4 (`types.ts`): o schema Zod exige `name` (string não vazia); sem `name` o parse falha; S4 (`template-capabilities.ts`): manifesto ausente **ou** inválido → o CLI **cai silenciosamente em capacidades permissivas padrão** (nenhum erro). S1 **não define** "valid". **Verificado por execução (#4, 2026-09-18):** na etapa de scaffold o CLI faz `TemplateManifestSchema.parse` **sem tratamento** — um manifesto sem `name` derruba o CLI (`ZodError`, exit 1); só a resolução de capacidades (prompts) falha em silêncio. O `template.json` original do repositório sofria disso. Detalhes: [scaffold-compat.md](scaffold-compat.md). | Tratar como obrigatório (S1) e validar contra o schema de S4 (incluindo `name`) — `node scripts/validate-template.mjs` e `node scripts/verify-scaffold.mjs`. |
+| **D-02** | **Forma do comando** | S1: `npm create scaffold-hbar@latest --template owner/repo` (sem `--`). S2: `npm create scaffold-hbar@latest -- --template ...` (com `--`). S4: `npx create-scaffold-hbar@latest --template ...`. O README deste repositório usa a forma com `--`. **Verificado por execução (#4, 2026-09-18, npm 11.16.0):** sem `--`, o npm **consome** `--template` (`npm_config_template=true`) e `owner/repo` chega ao CLI como **nome do projeto**; com `--` ou via `npx` o CLI recebe `--template owner/repo`. A forma literal de S1 **não funciona** com o npm atual, para qualquer template. | Usar a forma com `--` (ou `npx`); reportar a divergência; reexecutar o teste na revalidação (#19). Ver [scaffold-compat.md](scaffold-compat.md) §2. |
 | **D-03** | **Ref/branch do template** | S4: sem `#branch`, a ref padrão é `main`; `template.json` é lido da ref informada. S1 não menciona ref. | O gate deve passar a partir da `main` do repositório público. |
 | **D-04** | **Gerenciadores de pacote** | S1: "npm or Yarn workspaces". S2 (exemplo de manifesto): `packageManager: ["pnpm", "yarn"]`. S4 (schema): enum aceita apenas `yarn`, `npm`, `none`. S4 (README): Yarn é usado automaticamente. | Usar apenas **npm ou Yarn** (conjunto de S1 ∩ S4); não usar `pnpm`. |
 | **D-05** | **Versão do Node** | S1: ≥ 20.18.3. S3 (`engines.node`): `>=20.18.3` (consistente). S4 e S5 (`engines`): `>=20` (menos restritivo). | Regra do gate: **≥ 20.18.3**. |
@@ -330,7 +330,7 @@ Comandos entre `<>` dependem da implementação e **ainda não existem** no repo
 | [ ] | **CHK-06** | GATE-07 | `package.json` raiz com `workspaces` listando os packages; gerenciador **npm ou Yarn** (não pnpm); `packageManager` coerente. | `package.json` raiz |
 | [ ] | **CHK-07** | GATE-08 | `engines.node` = `>=20.18.3` no `package.json` raiz; testar com Node exatamente **20.18.3** (`node -v`). | `node -v` + instalação bem-sucedida |
 | [ ] | **CHK-08** | GATE-09 | `template.json` na **raiz da `main`**, JSON válido, com `name` **e** bloco `create-scaffold-hbar` (`capabilities`/`defaults`) coerente com o repo (`nextjs-app`, `hardhat`/`foundry`, `yarn`/`npm`). Validar contra o schema de S4 (`TemplateManifestSchema`) — **não** basta `JSON.parse`. Conferir que a API do GitHub o serve: `gh api repos/<owner>/<repo>/contents/template.json`. | Saída da validação de schema |
-| [ ] | **CHK-09** | GATE-01 | Em diretório vazio e com Node 20.18.3: `npm create scaffold-hbar@latest --template <owner>/<repo>` (**forma literal de S1**) **e** `npm create scaffold-hbar@latest -- --template <owner>/<repo>` (forma de S2). Conclui sem erro. Registrar qualquer diferença de comportamento (D-02). | Log completo das duas execuções |
+| [ ] | **CHK-09** | GATE-01 | Em diretório vazio e com Node 20.18.3: `npm create scaffold-hbar@latest -- --template <owner>/<repo>` (forma de S2, a única que entrega a flag ao CLI com o npm atual) **e** a forma literal de S1 (sem `--`), esta apenas para **reconfirmar** o comportamento de D-02. Conclui sem erro. Registrar qualquer diferença. | Log completo das duas execuções |
 | [ ] | **CHK-10** | GATE-10 | `README.md` na raiz: pré-requisitos, setup, env vars, comandos, rotas, arquitetura, link para evidência Testnet e para este documento. | Revisão |
 | [ ] | **CHK-11** | GATE-11 | `AGENTS.md` na raiz, específico ao projeto e verdadeiro em relação aos comandos existentes. | Revisão |
 | [ ] | **CHK-12** | GATE-12 | Ao menos um serviço Hedera nativo real integrado no código executado (HCS e/ou HTS e/ou contrato Solidity implantado). Sem mocks no caminho da evidência. | Trecho de código + tx |
@@ -377,12 +377,12 @@ Snapshot de **2026-09-18** (commit `a87cfba`), apenas para orientar #19/#20. Nã
 | Item do gate | Observação no repositório |
 |---|---|
 | GATE-03 | `LICENSE` (MIT, © 2026 Filipe Martins) presente. |
-| GATE-04 | `packages/hardhat`, `packages/nextjs`, `packages/sdk` existem, mas contêm apenas `.gitkeep`. |
-| GATE-07 / 08 | Não há `package.json` raiz (sem `workspaces` nem `engines`). |
-| **GATE-09** | `template.json` existe, mas **não possui o campo `name`**, exigido pelo schema de S4 (D-01) — como o CLI cai em padrões permissivos, a falha não seria ruidosa. Declara apenas `yarn` como gerenciador. |
+| GATE-04 | `packages/hardhat`, `packages/nextjs`, `packages/sdk` com conteúdo real (config, rotas, testes) — atualizado em #4. |
+| GATE-07 / 08 | `package.json` raiz com Yarn Workspaces (`hardhat`, `nextjs`, `sdk`), `packageManager: yarn@3.2.3` e `engines.node >=20.18.3` — atualizado em #4; validado com Node 20.18.3. |
+| **GATE-09** | `template.json` corrigido em #4 (tinha sem `name`, o que **derrubava o CLI**) e validado contra o CLI 0.4.0 por execução real. **Ainda não verificado via GitHub:** repositório privado e sem push ([scaffold-compat.md](scaffold-compat.md) §8). |
 | GATE-10 / 11 | `README.md` e `AGENTS.md` presentes; comandos ainda "planejados". |
 | GATE-12 – 14 | Nenhuma transação Testnet registrada ainda. |
-| GATE-15 – 18 | Sem scripts de install/lint/build/start; `.github/workflows/` só com `.gitkeep`. |
+| GATE-15 – 18 | Scripts raiz `dev`/`start`/`build`/`lint`/`check` existem (#4); install, lint, build e `check` passam num projeto gerado pelo CLI 0.4.0 (Node 20.18.3 e 24). Rota `/` responde 200. CI (`.github/workflows/`) ainda vazia (#14). |
 | GATE-19 | `.env.example` com chaves vazias; não há `.env` versionado. |
 | RUB-01 | Provedor de oracle **pendente** (`docs/integration.md`). |
 
@@ -395,10 +395,12 @@ Preencher a cada revalidação contra as fontes. A linha de **#20** é **obrigat
 | Data | Responsável | Contexto | Fontes reconferidas | Mudanças encontradas | Ação |
 |---|---|---|---|---|---|
 | 2026-09-18 | Claude Code (via WebFetch/`gh`) | Criação do documento | S1–S5 | — (baseline) | Ver limitações em 1.2 |
-| _pendente_ | _____ | **Pré-submissão final — tarefa #20** | S1–S5 | | |
+| 2026-09-18 | Claude Code (execução do CLI) | Issue #4 — compatibilidade com `create-scaffold-hbar` | S4 (código + `npx` 0.4.0), npm | D-01 e D-02 resolvidos por execução ([scaffold-compat.md](scaffold-compat.md)) | Manifesto corrigido; forma com `--` |
+| _pendente_ | _____ | **Pré-submissão final — tarefa #20** (revalidar CLI em #19) | S1–S5 | | |
 
 ## Apêndice C — Histórico deste documento
 
 | Data | Alteração |
 |---|---|
 | 2026-09-18 | Criação: prazos, gate (GATE-01–20), rubrica (RUB-01–04), divergências (D-01–16) e checklist (CHK-00–32). |
+| 2026-09-18 | #4: D-01 e D-02 verificados por execução; Apêndice A atualizado. |

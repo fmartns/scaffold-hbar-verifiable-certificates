@@ -1,0 +1,45 @@
+{
+  "name": "@sh/hardhat",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "check-types": "tsc --noEmit --incremental",
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "format": "prettier --write './**/*.(ts|sol)'",
+    "lint": "eslint --max-warnings=0",
+    "lint-staged": "eslint --no-warn-ignored",
+    "test": "hardhat test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.6.1",
+    "@sh/sdk": "workspace:*",
+    "dotenv": "~16.4.5"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "~2.0.7",
+    "@nomicfoundation/hardhat-ethers": "~3.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "~1.0.11",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@typechain/ethers-v6": "~0.5.1",
+    "@typechain/hardhat": "~9.1.0",
+    "@types/mocha": "~10.0.10",
+    "@types/node": "^20.19.8",
+    "@typescript-eslint/eslint-plugin": "~8.27.0",
+    "@typescript-eslint/parser": "~8.27.0",
+    "chai": "~4.5.0",
+    "eslint": "~9.23.0",
+    "eslint-config-prettier": "~10.1.1",
+    "eslint-plugin-prettier": "~5.2.4",
+    "ethers": "^6.14.0",
+    "globals": "^16.0.0",
+    "hardhat": "2.22.19",
+    "hardhat-deploy": "^1.0.4",
+    "hardhat-deploy-ethers": "~0.4.2",
+    "prettier": "^3.5.3",
+    "prettier-plugin-solidity": "~1.4.1",
+    "ts-node": "~10.9.1",
+    "typechain": "~8.3.2",
+    "typescript": "^5.8.2"
+  }
+}
