@@ -28,3 +28,5 @@ O oracle normaliza e assina/atesta o dado externo. O hash e metadados auditávei
 `yarn setup`, `yarn dev`, `yarn check`, `yarn test`, `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.
 
 Consulte [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
+
+Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submissão: [docs/bounty-rules.md](docs/bounty-rules.md).
