@@ -46,7 +46,9 @@
     "lint-staged": "lint-staged",
     "next:lint-staged": "yarn workspace @sh/nextjs lint-staged",
     "setup": "node scripts/doctor.mjs && yarn workspace @sh/sdk setup",
-    "hcs:topic": "yarn workspace @sh/sdk hcs:topic"
+    "hcs:topic": "yarn workspace @sh/sdk hcs:topic",
+    "hts:settle": "yarn workspace @sh/sdk hts:settle",
+    "hts:token": "yarn workspace @sh/sdk hts:token"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
