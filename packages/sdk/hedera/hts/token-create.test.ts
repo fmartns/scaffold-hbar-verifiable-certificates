@@ -100,7 +100,7 @@ describe("provisionHtsToken, mint-transfer (the ADR v1 default)", () => {
       network: "testnet",
       tokenId: NEW_TOKEN,
       transactionId: FIXED_TX_ID,
-      envLines: [`${HTS_ENV.TOKEN_ID}=${NEW_TOKEN}`],
+      envLines: [`${HTS_ENV.TOKEN_ID}=${NEW_TOKEN}`, "HEDERA_HTS_CUSTODY=operator"],
       hashscanTokenUrl: `https://hashscan.io/testnet/token/${NEW_TOKEN}`,
       verified: true,
       supplyKey: true,
@@ -160,7 +160,7 @@ describe("provisionHtsToken, mint-transfer (the ADR v1 default)", () => {
       ok: true,
       status: "existing",
       tokenId: TOKEN,
-      envLines: [`${HTS_ENV.TOKEN_ID}=${TOKEN}`],
+      envLines: [`${HTS_ENV.TOKEN_ID}=${TOKEN}`, "HEDERA_HTS_CUSTODY=operator"],
     });
     expect(requests).toHaveLength(0);
   });
@@ -292,6 +292,22 @@ describe("provisionHtsToken, mint-transfer (the ADR v1 default)", () => {
   });
 });
 
+describe("custody .env line", () => {
+  it("adds HEDERA_HTS_CUSTODY=operator: this command\'s token only works with operator custody", async () => {
+    const { creator } = fakeCreator();
+    const result = await run(baseEnv(), fakeMirror({ tokens: { [NEW_TOKEN]: {} } }), { creator });
+    expect(result.ok && result.envLines).toContain("HEDERA_HTS_CUSTODY=operator");
+  });
+
+  it("does not repeat it when the environment already has operator custody", async () => {
+    const { creator } = fakeCreator();
+    const result = await run(baseEnv({ HEDERA_HTS_CUSTODY: "operator" }), fakeMirror({ tokens: { [NEW_TOKEN]: {} } }), {
+      creator,
+    });
+    expect(result.ok && result.envLines).toEqual([`${HTS_ENV.TOKEN_ID}=${NEW_TOKEN}`]);
+  });
+});
+
 describe("provisionHtsToken, pool-transfer (no supply key: needs an initial supply)", () => {
   it("creates the token with an initial supply and no supply key by default", async () => {
     const { creator, requests } = fakeCreator();
@@ -301,7 +317,11 @@ describe("provisionHtsToken, pool-transfer (no supply key: needs an initial supp
     expect(result).toMatchObject({
       ok: true,
       supplyKey: false,
-      envLines: [`${HTS_ENV.TOKEN_ID}=${NEW_TOKEN}`, "HEDERA_HTS_SETTLEMENT_MODEL=pool-transfer"],
+      envLines: [
+        `${HTS_ENV.TOKEN_ID}=${NEW_TOKEN}`,
+        "HEDERA_HTS_CUSTODY=operator",
+        "HEDERA_HTS_SETTLEMENT_MODEL=pool-transfer",
+      ],
     });
     if (result.ok) expect(result.warnings.join(" ")).toMatch(/no supply key/);
   });

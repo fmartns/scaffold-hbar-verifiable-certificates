@@ -217,6 +217,15 @@ const fail = (
 
 const defaultSleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
+/**
+ * A token this command creates or confirms has the operator as treasury, so it is only usable with operator custody
+ * (ADR §6.7's router custody expects the router itself as treasury). Returns the `.env` line to set, or none when it is
+ * already `operator`.
+ */
+function custodyEnvLines(env: EnvironmentVariables): string[] {
+  return env[HTS_ENV.CUSTODY]?.trim() === "operator" ? [] : [`${HTS_ENV.CUSTODY}=operator`];
+}
+
 /** Checks that a configured token is usable as a dev settlement token: exists, right treasury, right supply key. */
 async function checkExistingToken(
   network: HederaNetwork,
@@ -400,7 +409,7 @@ export async function provisionHtsToken(
       network: network.name,
       tokenId: configured,
       hashscanTokenUrl: hashscanTokenUrl(network, configured),
-      envLines: [`${HTS_ENV.TOKEN_ID}=${configured}`],
+      envLines: [`${HTS_ENV.TOKEN_ID}=${configured}`, ...custodyEnvLines(env)],
       verified: true,
       supplyKey: model === "mint-transfer",
       adminKey: false,
@@ -534,7 +543,7 @@ export async function provisionHtsToken(
       "The token has no supply key: it can never be minted. Use it only with HEDERA_HTS_SETTLEMENT_MODEL=pool-transfer.",
     );
 
-  const envLines = [`${HTS_ENV.TOKEN_ID}=${created.tokenId}`];
+  const envLines = [`${HTS_ENV.TOKEN_ID}=${created.tokenId}`, ...custodyEnvLines(env)];
   if (model === "pool-transfer") envLines.push(`${HTS_ENV.MODEL}=pool-transfer`);
 
   return {

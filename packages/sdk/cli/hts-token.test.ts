@@ -205,7 +205,7 @@ describe("runCreateToken", () => {
     expect(JSON.parse(result.lines[0])).toMatchObject({
       ok: true,
       tokenId: "0.0.8888",
-      envLines: ["HEDERA_HTS_TOKEN_ID=0.0.8888"],
+      envLines: ["HEDERA_HTS_TOKEN_ID=0.0.8888", "HEDERA_HTS_CUSTODY=operator"],
     });
   });
 });
