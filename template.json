@@ -56,6 +56,22 @@
         "description": "Overall deadline of one HCS publish in milliseconds (1000 to 120000). Empty uses 30000."
       },
       {
+        "key": "HEDERA_HTS_TOKEN_ID",
+        "description": "ID (0.0.x) of the HTS token that represents the settled asset (not a generic ERC-20). Required by the HTS adapter."
+      },
+      {
+        "key": "HEDERA_HTS_SETTLEMENT_MODEL",
+        "description": "How a settlement credits the beneficiary: mint-transfer (ADR v1: mint the amount, then transfer it) or pool-transfer (transfer from a pre-funded treasury). Empty uses mint-transfer."
+      },
+      {
+        "key": "HEDERA_HTS_CUSTODY",
+        "description": "Who holds the token's treasury and keys: router (production, ADR v1: the SettlementRouter mints and transfers on-chain) or operator (development and Testnet only: the operator account does). Empty uses router. Refused on mainnet."
+      },
+      {
+        "key": "HEDERA_HTS_TREASURY_ID",
+        "description": "Treasury account (0.0.x) for operator custody. Empty uses the operator account."
+      },
+      {
         "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
         "description": "Encrypted deployer key written by the account script. Do not fill it manually."
       },

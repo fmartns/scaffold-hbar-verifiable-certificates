@@ -118,27 +118,31 @@ const configError = (variable: string, message: string, remediation: string) =>
     configIssues: [{ variable, message, remediation }],
   });
 
+export interface HieroPrivateKeySdk {
+  PrivateKey: {
+    fromStringDer(k: string): unknown;
+    fromStringED25519(k: string): unknown;
+    fromStringECDSA(k: string): unknown;
+  };
+}
+
 /**
- * Resolves the operator private key. A DER key carries its curve; a raw 32-byte key does not, so the operator account's
- * key on the network decides. Never echoes the key.
+ * Resolves a raw hex private key against the account it must belong to. A DER-encoded key carries its own curve; a raw
+ * 32-byte key does not, so the account's actual key on the network decides between ED25519 and ECDSA. Never echoes the
+ * key: on any failure it throws with only the variable name and a generic reason.
  */
-async function resolveOperatorKey(
-  env: EnvironmentVariables,
-  network: HederaNetwork,
+export async function resolveKeyForAccount(
+  rawKey: string,
   accountId: string,
-  sdk: {
-    PrivateKey: {
-      fromStringDer(k: string): unknown;
-      fromStringED25519(k: string): unknown;
-      fromStringECDSA(k: string): unknown;
-    };
-  },
+  network: HederaNetwork,
+  sdk: HieroPrivateKeySdk,
   fetchImpl: typeof fetch,
+  variable: string,
 ): Promise<unknown> {
-  const raw = (env[HEDERA_ENV.OPERATOR_KEY] ?? "").trim().replace(/^0x/i, "");
-  const fix = "Set HEDERA_OPERATOR_KEY to the private key of HEDERA_OPERATOR_ID (a DER-encoded key is unambiguous).";
+  const raw = rawKey.trim().replace(/^0x/i, "");
+  const fix = `Set ${variable} to the private key of ${accountId} (a DER-encoded key is unambiguous).`;
   if (!/^[0-9a-fA-F]+$/.test(raw)) {
-    throw configError(HEDERA_ENV.OPERATOR_KEY, "HEDERA_OPERATOR_KEY is not a hex-encoded private key.", fix);
+    throw configError(variable, `${variable} is not a hex-encoded private key.`, fix);
   }
   try {
     if (raw.startsWith("30")) return sdk.PrivateKey.fromStringDer(raw);
@@ -151,11 +155,28 @@ async function resolveOperatorKey(
     return match.type === "ED25519" ? sdk.PrivateKey.fromStringED25519(raw) : sdk.PrivateKey.fromStringECDSA(raw);
   } catch {
     throw configError(
-      HEDERA_ENV.OPERATOR_KEY,
-      "Could not determine the type of HEDERA_OPERATOR_KEY (ED25519 or ECDSA) or it does not match the account.",
+      variable,
+      `Could not determine the type of ${variable} (ED25519 or ECDSA) or it does not match account ${accountId}.`,
       `${fix} Run \`yarn setup\` to diagnose.`,
     );
   }
+}
+
+async function resolveOperatorKey(
+  env: EnvironmentVariables,
+  network: HederaNetwork,
+  accountId: string,
+  sdk: HieroPrivateKeySdk,
+  fetchImpl: typeof fetch,
+): Promise<unknown> {
+  return resolveKeyForAccount(
+    env[HEDERA_ENV.OPERATOR_KEY] ?? "",
+    accountId,
+    network,
+    sdk,
+    fetchImpl,
+    HEDERA_ENV.OPERATOR_KEY,
+  );
 }
 
 export interface OperatorClient {
