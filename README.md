@@ -58,6 +58,8 @@ Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submiss
 
 Envelope de evidência HCS (schema estável v1) e serviço de publicação: [docs/hcs-envelope.md](docs/hcs-envelope.md). Fluxo: `yarn setup` → `yarn hcs:topic --write --smoke-test` → `HCS_INTEGRATION=1 yarn workspace @sh/sdk test:integration` (teste opcional na testnet).
 
+Interface de oracle e mock determinístico (para testes/CI/dev; a integração real é a issue #23): [docs/oracle-adapter.md](docs/oracle-adapter.md).
+
 Adapter HTS de liquidação (plano mint-transfer/pool-transfer, pré-condições, associação, idempotência, erros): [docs/hts-adapter.md](docs/hts-adapter.md). Teste opcional na testnet: `HTS_INTEGRATION=1 yarn workspace @sh/sdk test:integration`.
 
 Benchmark de DX em scaffolds multi-chain e requisitos para #4, #24, #11 e #12: [docs/dx-benchmark.md](docs/dx-benchmark.md).
