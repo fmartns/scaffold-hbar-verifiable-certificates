@@ -13,8 +13,10 @@
     "lint-staged": "eslint --no-warn-ignored",
     "setup": "tsx cli/setup.ts",
     "test": "vitest run",
-    "test:integration": "vitest run publisher.integration",
-    "hcs:topic": "tsx cli/create-topic.ts"
+    "test:integration": "vitest run integration",
+    "hcs:topic": "tsx cli/create-topic.ts",
+    "hts:settle": "tsx cli/hts-settle.ts",
+    "hts:token": "tsx cli/hts-token.ts"
   },
   "devDependencies": {
     "@types/node": "^20.19.8",
