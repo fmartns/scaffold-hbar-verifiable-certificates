@@ -80,6 +80,22 @@
         "description": "Base URL of the oracle provider."
       },
       {
+        "key": "ORACLE_PROVIDER",
+        "description": "Which oracle provider to use: mock (default; deterministic, no credentials, for tests/dev/CI) or a real provider name registered by issue #23. Never selects a real provider by itself."
+      },
+      {
+        "key": "ORACLE_TIMEOUT_MS",
+        "description": "Deadline of one oracle fetch, in milliseconds. Empty uses 10000."
+      },
+      {
+        "key": "ORACLE_MAX_AGE_SECONDS",
+        "description": "Oracle-side freshness precheck: an observation older than this is rejected before signing. Empty uses 300 (ADR-001 maxAge starting point)."
+      },
+      {
+        "key": "ORACLE_VALIDITY_SECONDS",
+        "description": "Default attestation lifetime from observedAt, when a caller does not specify one. Empty uses 900 (ADR-001 maxValidity starting point)."
+      },
+      {
         "key": "ORACLE_API_KEY",
         "description": "API key of the oracle provider, when the provider requires one."
       }

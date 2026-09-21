@@ -59,3 +59,7 @@ Configuration: `HEDERA_HCS_TOPIC_ID` and `HEDERA_SETTLEMENT_ROUTER_ADDRESS` (req
 Production custody is the `SettlementRouter` (#9), which mints and transfers on-chain; off-chain execution (`HEDERA_HTS_CUSTODY=operator`) is for development and Testnet. Details, error codes and the idempotency rules: [hts-adapter.md](hts-adapter.md).
 
 Configuration: `HEDERA_HTS_TOKEN_ID` (required), `HEDERA_HTS_SETTLEMENT_MODEL`, `HEDERA_HTS_CUSTODY`, `HEDERA_HTS_TREASURY_ID`.
+
+## Oracle provider interface and mock
+
+`OracleProvider`/`EventNormalizer`/`Attestor` in `@sh/sdk` (`hedera/oracle`) are the single contract between the settlement flow and any external data source; `createOracleAdapter` composes them into fetch → normalize → validate → freshness precheck → attest. `createMockOracleAdapter` is a deterministic mock for tests, CI and local development — it is not production/demo oracle integration, which is issue #23's responsibility. Selection between the mock and a real provider is by `ORACLE_PROVIDER` configuration. Details, identity rules and the contract a real provider must satisfy: [oracle-adapter.md](oracle-adapter.md).
