@@ -41,6 +41,8 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn install` | Instala todas as dependências |
 | `yarn doctor` | Verifica Node, Yarn e `.env` |
 | `yarn setup` | Valida rede, conta e saldo Hedera (`cp .env.example .env` antes); encerra com erro claro se o ambiente for inválido |
+| `yarn hts:token` | Cria um token HTS de desenvolvimento (tesouraria/chave de supply = operador). Mostra o plano e o custo (~US$ 1) e pergunta antes de criar; não cria um segundo se já houver um usável |
+| `yarn hts:settle` | Testa o adapter HTS de verdade: `preflight` (checa, não envia), `associate`, `transfer` (mint/transfer real, só em `HEDERA_HTS_CUSTODY=operator`). Mostra o plano e o custo estimado e pergunta antes de enviar; `--label` deixa a liquidação repetível de propósito para testar idempotência |
 | `yarn hcs:topic` | Cria o tópico HCS de evidência (`submitKey` = chave do operador). Mostra o que será criado e o custo estimado e pergunta `[Y/n]` antes; `--write` grava `HEDERA_HCS_TOPIC_ID` no `.env`, `--smoke-test` publica e lê de volta uma mensagem, `--yes` dispensa a pergunta. Não cria um segundo tópico se já houver um válido |
 | `yarn dev` (ou `yarn start`) | Sobe o app Next.js em modo desenvolvimento |
 | `yarn build` | Compila SDK, contratos e app |
@@ -55,5 +57,7 @@ Consulte [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submissão: [docs/bounty-rules.md](docs/bounty-rules.md).
 
 Envelope de evidência HCS (schema estável v1) e serviço de publicação: [docs/hcs-envelope.md](docs/hcs-envelope.md). Fluxo: `yarn setup` → `yarn hcs:topic --write --smoke-test` → `HCS_INTEGRATION=1 yarn workspace @sh/sdk test:integration` (teste opcional na testnet).
+
+Adapter HTS de liquidação (plano mint-transfer/pool-transfer, pré-condições, associação, idempotência, erros): [docs/hts-adapter.md](docs/hts-adapter.md). Teste opcional na testnet: `HTS_INTEGRATION=1 yarn workspace @sh/sdk test:integration`.
 
 Benchmark de DX em scaffolds multi-chain e requisitos para #4, #24, #11 e #12: [docs/dx-benchmark.md](docs/dx-benchmark.md).

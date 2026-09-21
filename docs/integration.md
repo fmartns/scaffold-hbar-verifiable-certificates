@@ -51,3 +51,11 @@ The envelope schema (v1), identifiers, error codes and retry policy are specifie
 Configuration: `HEDERA_HCS_TOPIC_ID` and `HEDERA_SETTLEMENT_ROUTER_ADDRESS` (required), `HEDERA_HCS_PUBLISH_TIMEOUT_MS` (optional).
 
 `yarn hcs:topic` creates the evidence topic (submitKey = operator key) and prints `HEDERA_HCS_TOPIC_ID`; see [hcs-envelope.md](hcs-envelope.md#create-the-topic-with-a-command).
+
+## HTS settlement adapter
+
+`createHtsAdapterFromEnv` / `createHtsSettlementAdapter` in `@sh/sdk` are the single integration layer with the Hedera Token Service: the settlement plan (mint-transfer or pool-transfer, per ADR-001 §6.7), preconditions checked on Mirror Node before anything is sent, token association, idempotency keyed by `eventKey` (coordinated with the router's `statusOf`), and structured HTS errors. `preflightHtsAdapter` runs the #5 validator first, then checks the token and the custody.
+
+Production custody is the `SettlementRouter` (#9), which mints and transfers on-chain; off-chain execution (`HEDERA_HTS_CUSTODY=operator`) is for development and Testnet. Details, error codes and the idempotency rules: [hts-adapter.md](hts-adapter.md).
+
+Configuration: `HEDERA_HTS_TOKEN_ID` (required), `HEDERA_HTS_SETTLEMENT_MODEL`, `HEDERA_HTS_CUSTODY`, `HEDERA_HTS_TREASURY_ID`.

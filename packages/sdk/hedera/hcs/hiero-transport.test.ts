@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createHieroTransport, createHcsPublisherFromEnv } from "./hiero-transport";
+import { PrivateKey } from "@hiero-ledger/sdk";
+import { createHieroTransport, createHcsPublisherFromEnv, resolveKeyForAccount } from "./hiero-transport";
+import { NETWORKS } from "../networks";
 import type { HieroSdkLike, TopicMessageSubmitTransactionLike } from "./hiero-transport";
 import { FIXED_TX_ID, validEnv } from "./test-fixtures";
 import { HcsPublishError } from "./errors";
@@ -152,5 +154,102 @@ describe("createHcsPublisherFromEnv", () => {
     expect(handle.publisher.topicId).toBe("0.0.4567");
     handle.close();
     handle.close();
+  });
+});
+
+// A real ED25519 and a real ECDSA keypair (generated once with @hiero-ledger/sdk), so `inspectPrivateKey` (used inside
+// `resolveKeyForAccount`) derives real, matching candidates instead of needing a fake.
+const REAL_ED25519_RAW = "4648e9a7526ef8e01ec5c7d4cd2096da120921b34daf46523301282832d0248b";
+const REAL_ED25519_PUBLIC = "2e37d27345eaa7ca6256b6acb4f46752603ae0557abcfb20f283e4e5490512d6";
+const REAL_ECDSA_RAW = "5f61c88cfd65a05f976c77171b6f8d22aa0cda47b920b741f25c4459820ed9fa";
+const REAL_ECDSA_PUBLIC = "0354e14b90b63378f4d65bc4f8a65fdb1b658d7d5126aa874e9f49457d2f2e5729";
+
+describe("resolveKeyForAccount", () => {
+  const account = (publicKey: string, type = "ED25519") =>
+    (async () =>
+      new Response(
+        `{"account":"0.0.9001","deleted":false,"balance":{"balance":0,"timestamp":"1.0","tokens":[]},"key":{"_type":"${type}","key":"${publicKey}"}}`,
+      )) as typeof fetch;
+
+  it("resolves a raw key against the ED25519 or ECDSA public key the account actually has", async () => {
+    const ed = await resolveKeyForAccount(
+      REAL_ED25519_RAW,
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      account(REAL_ED25519_PUBLIC),
+      "MY_KEY",
+    );
+    expect((ed as { toStringRaw(): string }).toStringRaw()).toBe(REAL_ED25519_RAW);
+    const ecdsa = await resolveKeyForAccount(
+      REAL_ECDSA_RAW,
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      account(REAL_ECDSA_PUBLIC, "ECDSA_SECP256K1"),
+      "MY_KEY",
+    );
+    expect((ecdsa as { toStringRaw(): string }).toStringRaw()).toBe(REAL_ECDSA_RAW);
+  });
+
+  it("resolves a DER-encoded key without any network lookup (it carries its own curve)", async () => {
+    const der = PrivateKey.fromStringED25519(REAL_ED25519_RAW).toStringDer();
+    const calls: string[] = [];
+    const key = await resolveKeyForAccount(
+      der,
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      (async (i: RequestInfo | URL) => (calls.push(String(i)), account(REAL_ED25519_PUBLIC)(i))) as never,
+      "MY_KEY",
+    );
+    expect((key as { toStringRaw(): string }).toStringRaw()).toBe(REAL_ED25519_RAW);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("fails, naming the given variable, when the key does not match the account", async () => {
+    const error = await resolveKeyForAccount(
+      REAL_ED25519_RAW,
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      account(REAL_ECDSA_PUBLIC, "ECDSA_SECP256K1"),
+      "MY_KEY",
+    )
+      .then(() => null)
+      .catch((e: unknown) => e as HcsPublishError);
+    expect(error).toBeInstanceOf(HcsPublishError);
+    expect(error!.failure).toMatchObject({ code: "CONFIG_INVALID" });
+    expect(error!.failure.message).toContain("MY_KEY");
+    expect(error!.failure.message).toContain("0.0.9001");
+  });
+
+  it("rejects a non-hex value without echoing it", async () => {
+    const error = await resolveKeyForAccount(
+      "not-a-key-SECRET",
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      account(REAL_ED25519_PUBLIC),
+      "MY_KEY",
+    )
+      .then(() => null)
+      .catch((e: unknown) => e as HcsPublishError);
+    expect(error!.failure.message).not.toContain("SECRET");
+    expect(error!.failure.message).toContain("MY_KEY");
+  });
+
+  it("never echoes the key in the mismatch error either", async () => {
+    const error = await resolveKeyForAccount(
+      REAL_ED25519_RAW,
+      "0.0.9001",
+      NETWORKS.testnet,
+      { PrivateKey },
+      account(REAL_ECDSA_PUBLIC, "ECDSA_SECP256K1"),
+      "MY_KEY",
+    )
+      .then(() => null)
+      .catch((e: unknown) => e as HcsPublishError);
+    expect(JSON.stringify(error!.failure)).not.toContain(REAL_ED25519_RAW);
   });
 });

@@ -15,7 +15,7 @@
  * The service never retries: a retry after an unknown outcome must be decided by the caller (ADR §5.5). It does not log,
  * prompt, or touch storage; it returns plain JSON-safe data.
  */
-import type { HederaNetwork } from "../networks";
+import { hashscanTopicUrl, hashscanTransactionUrl, timestampToNanoseconds, toMirrorTransactionId } from "../explorer";
 import { buildEnvelope, encodeMessage, messageSha256 } from "./envelope";
 import type { EnvelopeResult, Hex, HcsEnvelope, SettlementEventInput, SettlementEvent } from "./envelope";
 import { HcsPublishError, HcsTimeoutError, classifyPublishError } from "./errors";
@@ -148,29 +148,8 @@ export interface CreatePublisherOptions {
 // Links and identifiers
 // ---------------------------------------------------------------------------------------------------------------------
 
-/** `0.0.123@1712345678.123456789` -> `0.0.123-1712345678-123456789` */
-export function toMirrorTransactionId(transactionId: string): string {
-  const match = /^(\d+\.\d+\.\d+)@(\d+)\.(\d+)$/.exec(transactionId);
-  return match ? `${match[1]}-${match[2]}-${match[3]}` : transactionId;
-}
-
-/**
- * HashScan page of the transaction, addressed by consensus timestamp (unique per record, unlike a transaction ID that can
- * have duplicates or children). Null when the network has no public explorer.
- */
-export function hashscanTransactionUrl(network: HederaNetwork, consensusTimestamp: string): string | null {
-  return network.hashscanUrl ? `${network.hashscanUrl}/transaction/${consensusTimestamp}` : null;
-}
-
-export function hashscanTopicUrl(network: HederaNetwork, topicId: string): string | null {
-  return network.hashscanUrl ? `${network.hashscanUrl}/topic/${topicId}` : null;
-}
-
-/** `1712345678.123456789` -> `1712345678123456789` */
-export function timestampToNanoseconds(consensusTimestamp: string): string {
-  const [seconds, nanos] = consensusTimestamp.split(".");
-  return (BigInt(seconds) * 1_000_000_000n + BigInt(nanos)).toString();
-}
+// Explorer and Mirror identifiers live in hedera/explorer.ts (shared with the HTS adapter); re-exported for callers.
+export { hashscanTopicUrl, hashscanTransactionUrl, timestampToNanoseconds, toMirrorTransactionId };
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Step 4: interpret the transaction result
