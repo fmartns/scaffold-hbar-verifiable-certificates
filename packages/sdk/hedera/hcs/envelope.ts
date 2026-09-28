@@ -179,7 +179,7 @@ export type EnvelopeResult<T> = { ok: true; value: T } | { ok: false; issues: En
 
 const is = (value: unknown): value is string => typeof value === "string";
 
-function parseUint64(value: unknown, field: string, issues: EnvelopeIssue[]): bigint {
+export function parseUint64(value: unknown, field: string, issues: EnvelopeIssue[]): bigint {
   let parsed: bigint | null = null;
   if (typeof value === "bigint") parsed = value;
   else if (typeof value === "number" && Number.isSafeInteger(value)) parsed = BigInt(value);
@@ -199,7 +199,7 @@ function parseUint64(value: unknown, field: string, issues: EnvelopeIssue[]): bi
   return parsed;
 }
 
-function parseBytes32(value: unknown, field: string, issues: EnvelopeIssue[], nonZero: boolean): Hex {
+export function parseBytes32(value: unknown, field: string, issues: EnvelopeIssue[], nonZero: boolean): Hex {
   if (!is(value) || !isHexString(value, 32)) {
     issues.push({
       field,
@@ -337,7 +337,7 @@ export function validateSignature(value: unknown): EnvelopeResult<Hex> {
   return { ok: true, value: hexlify(bytes) as Hex };
 }
 
-function validateDomain(domain: SigningDomain): EnvelopeResult<{ chainId: bigint; verifyingContract: Hex }> {
+export function validateDomain(domain: SigningDomain): EnvelopeResult<{ chainId: bigint; verifyingContract: Hex }> {
   const issues: EnvelopeIssue[] = [];
   let chainId = 0n;
   try {
@@ -354,7 +354,7 @@ function validateDomain(domain: SigningDomain): EnvelopeResult<{ chainId: bigint
     issues.push({
       field: "domain",
       code: "INVALID_FORMAT",
-      message: "domain.verifyingContract must be a non-zero EVM address (the SettlementRouter).",
+      message: "domain.verifyingContract must be a non-zero EVM address (the verifying contract).",
     });
   }
   return issues.length > 0 ? { ok: false, issues } : { ok: true, value: { chainId, verifyingContract } };
