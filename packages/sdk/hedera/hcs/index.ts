@@ -1,4 +1,5 @@
 export * from "./envelope";
+export * from "./credential-envelope";
 export * from "./errors";
 export * from "./config";
 export * from "./publisher";
