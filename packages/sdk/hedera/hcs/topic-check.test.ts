@@ -67,6 +67,14 @@ describe("verifyHcsTopic", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "TOPIC_INVALID", outcome: "not_sent" } });
   });
 
+  it("reports a non-JSON answer as a retryable failure instead of throwing", async () => {
+    const result = await verifyHcsTopic(NETWORKS.testnet, TEST_TOPIC, {
+      publisherKeys,
+      fetch: (async () => new Response("<html>proxy error</html>")) as unknown as typeof fetch,
+    });
+    expect(result).toMatchObject({ ok: false, error: { code: "NETWORK_UNAVAILABLE", retryable: true } });
+  });
+
   it("reports a deleted topic as TOPIC_INVALID", async () => {
     const result = await check(fakeMirror({ topic: { body: { deleted: true } } }));
     expect(result).toMatchObject({ ok: false, error: { code: "TOPIC_INVALID" } });

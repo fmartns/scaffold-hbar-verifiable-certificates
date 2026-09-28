@@ -8,8 +8,11 @@
  * Security: no result, issue or message contains a private key, and URLs are reduced to their origin. Errors thrown by
  * key parsing are discarded because the Hedera SDK echoes the rejected input in them.
  */
+import { TINYBARS_PER_HBAR, formatHbar } from "./hbar";
 import { NETWORKS, getNetwork, selectedNetworkName } from "./networks";
 import type { HederaNetworkName } from "./networks";
+
+export { formatHbar };
 
 /** Environment variables read by the validator. */
 export const ENV = {
@@ -23,8 +26,7 @@ export const ENV = {
 
 export type EnvironmentVariables = Record<string, string | undefined>;
 
-const TINYBARS_PER_HBAR = 100_000_000n;
-const FAUCET_URL = "https://portal.hedera.com/faucet";
+export const FAUCET_URL = "https://portal.hedera.com/faucet";
 const PORTAL_URL = "https://portal.hedera.com";
 
 /**
@@ -143,14 +145,6 @@ export interface ValidateEnvironmentOptions {
 // ---------------------------------------------------------------------------------------------------------------------
 // Pure helpers
 // ---------------------------------------------------------------------------------------------------------------------
-
-export function formatHbar(tinybars: bigint): string {
-  const negative = tinybars < 0n;
-  const abs = negative ? -tinybars : tinybars;
-  const whole = abs / TINYBARS_PER_HBAR;
-  const fraction = (abs % TINYBARS_PER_HBAR).toString().padStart(8, "0").replace(/0+$/, "");
-  return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
-}
 
 /** Parses a positive decimal HBAR amount (up to 8 decimals) into tinybars without floating point. */
 export function parseHbar(value: string): bigint | null {
@@ -308,7 +302,12 @@ async function lookupAccount(
   return { kind: "found", account: { deleted: body.deleted === true, balanceTinybars: BigInt(balance[1]), key } };
 }
 
-async function relayChainId(fetchImpl: typeof fetch, rpcUrl: string, timeoutMs: number): Promise<number | null> {
+/** `eth_chainId` of a JSON-RPC relay; `null` when it does not answer with one. Never throws. */
+export async function fetchRelayChainId(
+  fetchImpl: typeof fetch,
+  rpcUrl: string,
+  timeoutMs: number,
+): Promise<number | null> {
   try {
     const response = await fetchImpl(rpcUrl, {
       method: "POST",
@@ -639,7 +638,7 @@ export async function validateHederaEnvironment(
   // 9. JSON-RPC relay, only when overridden --------------------------------------------------------------------------
   const rpcOverride = read(ENV.RPC_URL);
   if (rpcOverride && parseHttpUrl(rpcOverride)) {
-    const chainId = await relayChainId(fetchImpl, rpcOverride, timeoutMs);
+    const chainId = await fetchRelayChainId(fetchImpl, rpcOverride, timeoutMs);
     if (chainId === null) {
       warnings.push(
         issue(

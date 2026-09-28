@@ -84,12 +84,27 @@ export async function verifyHcsTopic(
     };
   }
 
-  const body = (await response.json()) as {
+  let body: {
     topic_id?: string;
     memo?: string;
     deleted?: boolean;
     submit_key?: { _type?: string; key?: string } | null;
   };
+  try {
+    body = (await response.json()) as typeof body;
+    if (typeof body !== "object" || body === null) throw new Error("not an object");
+  } catch {
+    return {
+      ok: false,
+      error: failure({
+        code: "NETWORK_UNAVAILABLE",
+        message: "The Mirror Node answered with something that is not a topic.",
+        remediation: "Check HEDERA_MIRROR_NODE_URL points to the Mirror Node REST base URL, then retry.",
+        retryable: true,
+        topicId,
+      }),
+    };
+  }
   const topic: TopicInfo = {
     topicId,
     memo: body.memo ?? "",
