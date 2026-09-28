@@ -28,6 +28,8 @@ const config: HardhatUserConfig = {
       {
         version: "0.8.28",
         settings: {
+          // OpenZeppelin 5.x uses `mcopy`; Hedera's EVM supports Cancun.
+          evmVersion: "cancun",
           optimizer: {
             enabled: true,
             runs: 200,
