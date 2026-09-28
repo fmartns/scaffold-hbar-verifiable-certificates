@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Verifiable Settlement",
@@ -9,7 +11,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <header className="site-header">
+          <strong>Verifiable Settlement</strong>
+          <Link href="/">Home</Link>
+          <Link href="/dashboard">Environment</Link>
+        </header>
+        {children}
+      </body>
     </html>
   );
 }

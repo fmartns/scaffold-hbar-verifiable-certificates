@@ -33,6 +33,12 @@ export function hashscanTokenUrl(network: HederaNetwork, tokenId: string): strin
   return network.hashscanUrl ? `${network.hashscanUrl}/token/${tokenId}` : null;
 }
 
+/** Accepts a Hedera account id (`0.0.123`) or an EVM address (`0x…`). */
 export function hashscanAccountUrl(network: HederaNetwork, accountId: string): string | null {
   return network.hashscanUrl ? `${network.hashscanUrl}/account/${accountId}` : null;
+}
+
+/** Accepts a contract id (`0.0.123`) or its EVM address (`0x…`). */
+export function hashscanContractUrl(network: HederaNetwork, contract: string): string | null {
+  return network.hashscanUrl ? `${network.hashscanUrl}/contract/${contract}` : null;
 }
