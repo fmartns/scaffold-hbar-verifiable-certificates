@@ -13,6 +13,8 @@ export const CREDENTIAL_REGISTRY_ABI = [
   "event CredentialIssued(bytes32 indexed credentialId, bytes32 indexed issuer, bytes32 indexed subjectCommitment, bytes32 credentialHash, bytes32 schemaId, bytes32 attestationDigest, address signer, uint64 signedAt, uint64 hcsSequence, uint64 hcsConsensusTimestampNs)",
   "event CredentialRevoked(bytes32 indexed credentialId, bytes32 indexed issuer, address indexed revokedBy, bool byAdmin, uint64 revokedAt)",
   "function statusOf(bytes32 credentialId) view returns (tuple(bytes32 issuer, bytes32 credentialHash, bytes32 subjectCommitment, address signer, uint64 issuedAt, uint64 revokedAt, uint8 status))",
+  "function hcsTopicNum() view returns (uint64)",
+  "function paused() view returns (bool)",
 ] as const;
 
 const REGISTRY = new Interface(CREDENTIAL_REGISTRY_ABI);
@@ -98,9 +100,79 @@ export function decodeCredentialRevokedLog(log: Pick<ContractLog, "topics" | "da
 
 export class RegistryReadError extends Error {
   readonly code = "REGISTRY_UNAVAILABLE";
-  constructor(message: string) {
+  /** `unavailable`: the relay did not answer usably. `not_registry`: it answered, but not like a CredentialRegistry. */
+  readonly reason: "unavailable" | "not_registry";
+  constructor(message: string, reason: "unavailable" | "not_registry" = "unavailable") {
     super(message);
     this.name = "RegistryReadError";
+    this.reason = reason;
+  }
+}
+
+interface RegistryCallOptions {
+  network: HederaNetwork;
+  registryAddress: string;
+  fetch?: typeof fetch;
+  timeoutMs?: number;
+}
+
+const readError = (detail: string, reason?: RegistryReadError["reason"]) =>
+  new RegistryReadError(
+    `Could not read the credential status from CredentialRegistry (${detail}). Check HEDERA_RPC_URL and HEDERA_CREDENTIAL_REGISTRY_ADDRESS.`,
+    reason,
+  );
+const unavailable = (detail: string) => readError(detail);
+const notRegistry = () =>
+  readError("malformed answer; is HEDERA_CREDENTIAL_REGISTRY_ADDRESS a CredentialRegistry?", "not_registry");
+
+/** `eth_call` over the relay; returns the raw result. */
+async function callRegistry(options: RegistryCallOptions, data: string): Promise<string> {
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  let body: { result?: unknown; error?: unknown };
+  try {
+    const response = await fetchImpl(options.network.rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_call",
+        params: [{ to: getAddress(options.registryAddress), data }, "latest"],
+      }),
+    });
+    if (!response.ok) throw unavailable(`HTTP ${response.status}`);
+    body = (await response.json()) as typeof body;
+  } catch (error) {
+    throw error instanceof RegistryReadError ? error : unavailable("network error");
+  }
+  if (typeof body.result !== "string" || body.error) throw unavailable("the call reverted or returned nothing");
+  return body.result;
+}
+
+export interface RegistryDeployment {
+  /** Number of the HCS topic the registry was deployed for (`0.0.<hcsTopicNum>`). */
+  hcsTopicNum: bigint;
+  /** Issuance is paused (revocation still works). */
+  paused: boolean;
+}
+
+/**
+ * Reads the deployment-level state of a `CredentialRegistry`. An address without a contract answers `0x`, which is
+ * reported as `not_registry`, distinct from a relay that did not answer.
+ */
+export async function readRegistryDeployment(options: RegistryCallOptions): Promise<RegistryDeployment> {
+  const [topic, paused] = await Promise.all([
+    callRegistry(options, REGISTRY.encodeFunctionData("hcsTopicNum")),
+    callRegistry(options, REGISTRY.encodeFunctionData("paused")),
+  ]);
+  try {
+    return {
+      hcsTopicNum: BigInt(REGISTRY.decodeFunctionResult("hcsTopicNum", topic)[0]),
+      paused: Boolean(REGISTRY.decodeFunctionResult("paused", paused)[0]),
+    };
+  } catch {
+    throw notRegistry();
   }
 }
 
@@ -112,44 +184,16 @@ export interface CredentialStatusReader {
 
 const STATUS: Record<number, OnChainCredentialStatus> = { 0: "not_found", 1: "issued", 2: "revoked" };
 
-export function createCredentialStatusReader(options: {
-  network: HederaNetwork;
-  registryAddress: string;
-  fetch?: typeof fetch;
-  timeoutMs?: number;
-}): CredentialStatusReader {
-  const fetchImpl = options.fetch ?? globalThis.fetch;
-  const registryAddress = getAddress(options.registryAddress);
+export function createCredentialStatusReader(options: RegistryCallOptions): CredentialStatusReader {
+  getAddress(options.registryAddress);
   const origin = new URL(options.network.rpcUrl).origin;
-  const unavailable = (detail: string) =>
-    new RegistryReadError(
-      `Could not read the credential status from CredentialRegistry (${detail}). Check HEDERA_RPC_URL and HEDERA_CREDENTIAL_REGISTRY_ADDRESS.`,
-    );
 
   return {
     origin,
     async statusOf(credentialId) {
-      let body: { result?: unknown; error?: unknown };
+      const result = await callRegistry(options, REGISTRY.encodeFunctionData("statusOf", [credentialId]));
       try {
-        const response = await fetchImpl(options.network.rpcUrl, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          signal: AbortSignal.timeout(options.timeoutMs ?? 10_000),
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            id: 1,
-            method: "eth_call",
-            params: [{ to: registryAddress, data: REGISTRY.encodeFunctionData("statusOf", [credentialId]) }, "latest"],
-          }),
-        });
-        if (!response.ok) throw unavailable(`HTTP ${response.status}`);
-        body = (await response.json()) as typeof body;
-      } catch (error) {
-        throw error instanceof RegistryReadError ? error : unavailable("network error");
-      }
-      if (typeof body.result !== "string" || body.error) throw unavailable("the call reverted or returned nothing");
-      try {
-        const [r] = REGISTRY.decodeFunctionResult("statusOf", body.result);
+        const [r] = REGISTRY.decodeFunctionResult("statusOf", result);
         const status = STATUS[Number(r.status)];
         if (!status) throw new Error("unknown status");
         return {
@@ -162,7 +206,7 @@ export function createCredentialStatusReader(options: {
           revokedAt: BigInt(r.revokedAt),
         };
       } catch {
-        throw unavailable("malformed answer; is HEDERA_CREDENTIAL_REGISTRY_ADDRESS a CredentialRegistry?");
+        throw notRegistry();
       }
     },
   };
