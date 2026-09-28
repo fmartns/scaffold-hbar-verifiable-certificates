@@ -17,6 +17,7 @@ import {
   createCredentialStatusReader,
   credentialDomain,
   encodeCredentialMessage,
+  readRegistryDeployment,
 } from "@sh/sdk";
 import type { CredentialAuditContext, CredentialEvent, HederaNetwork } from "@sh/sdk";
 
@@ -208,5 +209,26 @@ describe("CredentialRegistry ↔ SDK audit", function () {
       "chain.revoked",
     ]);
     expect(report.issuance?.onChain?.transactionHash).to.equal(issueReceipt!.hash.toLowerCase());
+  });
+
+  it("reads the deployment state the environment dashboard shows", async function () {
+    const { registry, admin } = await loadFixture(deployFixture);
+    const relay = (async (_input: string | URL | Request, init?: RequestInit) => {
+      const { params } = JSON.parse(String(init?.body));
+      const result = await ethers.provider.send("eth_call", params);
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }));
+    }) as typeof fetch;
+    const network: HederaNetwork = {
+      name: "local",
+      chainId: 31337,
+      rpcUrl: "http://127.0.0.1:8545",
+      mirrorNodeUrl: "http://127.0.0.1:5551",
+      hashscanUrl: null,
+    };
+    const read = () => readRegistryDeployment({ network, registryAddress: registry.target as string, fetch: relay });
+
+    expect(await read()).to.deep.equal({ hcsTopicNum: 4567n, paused: false });
+    await registry.connect(admin).setPaused(true);
+    expect((await read()).paused).to.equal(true);
   });
 });
