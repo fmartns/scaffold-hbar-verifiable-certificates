@@ -108,6 +108,7 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn hts:token` | Cria um token HTS de desenvolvimento (tesouraria/chave de supply = operador). Mostra o plano e o custo (~US$ 1) e pergunta antes de criar; não cria um segundo se já houver um usável |
 | `yarn hts:settle` | Testa o adapter HTS de verdade: `preflight` (checa, não envia), `associate`, `transfer` (mint/transfer real, só em `HEDERA_HTS_CUSTODY=operator`). Mostra o plano e o custo estimado e pergunta antes de enviar; `--label` deixa a liquidação repetível de propósito para testar idempotência |
 | `yarn hcs:topic` | Cria o tópico HCS de evidência (`submitKey` = chave do operador). Mostra o que será criado e o custo estimado e pergunta `[Y/n]` antes; `--write` grava `HEDERA_HCS_TOPIC_ID` no `.env`, `--smoke-test` publica e lê de volta uma mensagem, `--yes` dispensa a pergunta. Não cria um segundo tópico se já houver um válido |
+| `yarn verify:testnet` | Valida o fluxo completo de credencial na Testnet real: preflight do ambiente, emissão (recibo de consenso HCS antes do `CredentialRegistry`), auditoria pelo Mirror Node até ficar consistente, tentativas deliberadas de reemissão (devem ser bloqueadas), revogação e nova auditoria. Mostra o plano e o custo estimado e pergunta antes de pagar (`--yes` dispensa); `--dry-run` só checa. Recusa mainnet. Grava a evidência (transaction IDs, links HashScan, tempos, relatórios de auditoria) em `docs/evidence/testnet/` ([docs/testnet-validation.md](docs/testnet-validation.md)) |
 | `yarn dev` (ou `yarn start`) | Sobe o app Next.js em modo desenvolvimento |
 | `yarn build` | Compila SDK, contratos e app |
 | `yarn lint` | ESLint em todos os packages, sem warnings |
@@ -118,7 +119,7 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn coverage` | Os mesmos testes com cobertura; falha abaixo das metas de [docs/testing.md](docs/testing.md) |
 | `yarn harness:validate` | Validação determinística do Hedera Harness (tiers 0–1): arquivos, invariantes, varredura de segredos, `install --immutable`, `lint`, `check-types`, `test` e `build`. Use num clone limpo: falha de propósito se houver `.env` |
 
-Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.
+Planejados nas issues seguintes: `yarn test:integration` e `yarn test:e2e`.
 
 Consulte [docs/concepts.md](docs/concepts.md) (narrativa, termos e status de implementação), [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 

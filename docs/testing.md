@@ -13,7 +13,7 @@ verifier) adds its tests to the layers below and reuses the shared fixtures inst
   formula is a bug, for the same reason a second parser is (AGENTS.md).
 - **Live tests are opt-in.** `*.integration.test.ts` files talk to the real Hedera Testnet and are skipped unless enabled
   (`HCS_INTEGRATION=1`, `AUDIT_INTEGRATION=1`, … with `yarn workspace @sh/sdk test:integration`). They are evidence for
-  #18, never a CI requirement.
+  #18 (whose end-to-end run is `yarn verify:testnet`, [testnet-validation.md](testnet-validation.md)), never a CI requirement.
 
 ## The matrix
 
@@ -63,6 +63,7 @@ SDK code.
 | `mirror.ts`      | `FakeWorld` + `fakeFetch` (topics/messages, contracts/results/logs, `eth_call`, indexing lag, forced HTTP failures, offline), `virtualClock`, `auditContext` |
 | `hcs.ts`         | `createInMemoryTopic`: an `HcsTransport` that sequences messages, reports the transaction id first, can fail, and feeds the fake Mirror Node      |
 | `network.ts`     | `fakeHederaNetwork` (Mirror + relay for `checkHederaHealth`), `healthEnv`, `healthReport`, `HEALTH_SCENARIOS`                                    |
+| `testnet.ts`     | `fakeTestnet` + `testnetEnv`: a JSON-RPC relay backed by an in-memory `CredentialRegistry` (generated ABI; its checks, custom errors and events), signed transactions decoded and executed, wired to the in-memory topic, the fake Mirror Node and a virtual clock. Drives `yarn verify:testnet` end to end offline |
 
 Settlement-side fixtures (`hedera/hcs/test-fixtures.ts`, `hedera/hts/test-fixtures.ts`, `hedera/oracle/test-fixtures.ts`)
 stay next to their modules until the `SettlementRouter` flow needs them across packages; move them here then.
@@ -90,5 +91,6 @@ own bar regardless of the totals: every revert and every rejected input must hav
 | `yarn coverage`                           | the same suites with coverage, failing below the targets             |
 | `yarn sdk:test` / `hardhat:test` / `next:test` | one package                                                     |
 | `yarn workspace @sh/sdk test:integration` | opt-in live Testnet tests (need the variables each file documents)   |
+| `yarn verify:testnet`                     | opt-in live end-to-end credential validation on Testnet; writes evidence ([testnet-validation.md](testnet-validation.md)) |
 
 CI (#14) runs `yarn check` and `yarn coverage` with no secrets; the live tests stay manual.
