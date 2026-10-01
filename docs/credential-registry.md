@@ -6,9 +6,11 @@ replaces the planned `SettlementRouter` for the credential flow and keeps its gu
 authenticity, a permanent idempotency key, authenticity before uniqueness, non-issuing admin roles), without
 settlement policy, value caps or HTS.
 
-> **Status.** The `CredentialEvent` schema, type strings and tags below are a **proposal** pending ADR-002 (privacy and
-> data model). They are pinned by tests; changing any of them is a breaking change of the signing format and must be
-> mirrored in the SDK HCS envelope when it is adapted to `CredentialEvent`.
+> **Status.** How each field of `CredentialEvent` is derived (`issuer`, `schemaId`, `externalCredentialId`,
+> `credentialId`, `subjectCommitment`, `credentialHash`) is specified in [credential-schema.md](credential-schema.md)
+> (#38, the data-model part of ADR-002). The signed struct below is v1 of that model. The type string, domain and tag
+> are pinned by tests. Changing any of them breaks the signing format and must be mirrored in
+> `packages/sdk/hedera/hcs/credential-envelope.ts`.
 
 ## Flow
 
@@ -26,12 +28,12 @@ settlement policy, value caps or HTS.
 struct CredentialEvent {
     uint16  version;              // 1
     bytes32 issuer;               // keccak256(bytes(<lowercase ASCII organization name>)), registered
-    bytes32 externalCredentialId; // identity within the issuer: pure function of identifying fields, never JSON
-    bytes32 credentialHash;       // hash of the off-chain credential document
-    bytes32 subjectCommitment;    // salted commitment to the subject; never raw personal data
-    bytes32 schemaId;
-    uint64  signedAt;             // unix seconds
-    uint64  validUntil;           // expiry of this signed issuance, not of the credential
+    bytes32 externalCredentialId; // keccak256(abi.encode(tag, schemaId, reference)); rules C1–C6
+    bytes32 credentialHash;       // canonical content, incl. issuedAt/expiresAt and claims; never JSON
+    bytes32 subjectCommitment;    // keccak256(abi.encode(tag, salt, idType, idValue)); never raw personal data
+    bytes32 schemaId;             // keccak256(bytes("<name>.v<N>(<type> <field>,…)"))
+    uint64  signedAt;             // unix seconds; when this issuance was signed, not the credential's issuedAt
+    uint64  validUntil;           // expiry of this signed issuance, not of the credential (expiresAt)
     address submitter;            // address(0) = any caller
 }
 ```
