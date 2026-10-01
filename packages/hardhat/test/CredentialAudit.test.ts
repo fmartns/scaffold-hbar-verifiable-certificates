@@ -22,8 +22,8 @@ import {
 import type { CredentialAuditContext, CredentialEvent, HederaNetwork } from "@sh/sdk";
 
 /**
- * Cross-checks the SDK audit (#10) against the compiled CredentialRegistry (#9): the SDK's hand-written event ABI,
- * type strings and credentialId formula must match the contract, and an audit over REAL receipt logs must correlate.
+ * Cross-checks the SDK audit (#10) against the compiled CredentialRegistry (#9): the SDK's event topics (from the
+ * generated ABI, #24), type strings and credentialId formula must match the contract, and an audit over REAL receipt logs must correlate.
  * The Mirror Node is simulated from those receipts; `statusOf` goes to the Hardhat node over eth_call.
  */
 const TOPIC = "0.0.4567";
