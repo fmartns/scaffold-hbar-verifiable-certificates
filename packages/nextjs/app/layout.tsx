@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Link href="/">Home</Link>
           <Link href="/dashboard">Environment</Link>
           <Link href="/issuer">Issuer console</Link>
+          <Link href="/verify">Verify a credential</Link>
         </header>
         {children}
       </body>
