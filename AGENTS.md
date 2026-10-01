@@ -1,7 +1,7 @@
 # Agent Guide
 
 ## Architecture
-`packages/hardhat` owns Solidity/deploy/test; `packages/nextjs` is the developer console; `packages/sdk` owns Hedera, oracle and Mirror Node adapters and the network configuration. HCS records event attestations, Solidity decides settlement, HTS settles credits, Mirror Node audits.
+`packages/hardhat` owns Solidity/deploy/test; `packages/nextjs` is the developer console; `packages/sdk` owns Hedera, oracle and Mirror Node adapters and the network configuration. Credentials (the current direction): HCS records issuer-signed evidence, `CredentialRegistry` decides status, Mirror Node audits. The settlement modules (oracle, HTS) are history from the previous direction. Onboarding: [docs/quick-start.md](docs/quick-start.md); what each Hedera service does: [docs/hedera.md](docs/hedera.md); real errors: [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ## Rules
 - Never commit secrets, private keys, mnemonics or real account credentials.
