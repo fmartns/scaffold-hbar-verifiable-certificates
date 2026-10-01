@@ -1,8 +1,9 @@
 /**
  * HCS evidence envelope of the credential lifecycle: the wire format of an issuance or a revocation published to HCS.
  *
- * PROPOSAL pending #38 / ADR-002 (see docs/credential-audit.md). The issuance type string, domain and `credentialId`
- * formula are those of `CredentialRegistry` (#9); a Hardhat test pins them against the compiled contract. Like
+ * The issuance struct is v1 of the credential model in docs/credential-schema.md (#38); how its fields are derived lives
+ * in `../credentials/schema`. The revocation format is a proposal pending ADR-002 (#39). The type strings, domain and
+ * `credentialId` formula are those of `CredentialRegistry` (#9); a Hardhat test pins them against the contract. Like
  * `./envelope`, this module is pure: no I/O, no clock, no Hedera SDK, and it is the ONLY parser of credential messages.
  *
  * Wire format (binary, no JSON canonicalization; the first byte is the message kind and format version):
