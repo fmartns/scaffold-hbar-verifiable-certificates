@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <strong>Verifiable Settlement</strong>
           <Link href="/">Home</Link>
           <Link href="/dashboard">Environment</Link>
+          <Link href="/issuer">Issuer console</Link>
         </header>
         {children}
       </body>
