@@ -111,7 +111,8 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn dev` (ou `yarn start`) | Sobe o app Next.js em modo desenvolvimento |
 | `yarn build` | Compila SDK, contratos e app |
 | `yarn lint` | ESLint em todos os packages, sem warnings |
-| `yarn check` | `lint` + `check-types` + `test` (o que a CI executa) |
+| `yarn check` | `lint` + `check-types` + `test` (ciclo rápido de desenvolvimento) |
+| `yarn self-check` | Gate de elegibilidade completo: `template.json`, README/AGENTS.md, licença, `.env` e secrets (gitleaks), install, lint, tipos, testes, build e boot com rotas principais. Aponta o requisito que falhou; é o que a CI executa ([docs/self-check.md](docs/self-check.md)) |
 | `yarn secrets:scan` | Secret scan (gitleaks) do histórico git completo e do working tree, com valores sempre ocultos. Requer `gitleaks` instalado. Ver [docs/security.md](docs/security.md) |
 | `yarn test` | Testes do SDK e dos contratos |
 

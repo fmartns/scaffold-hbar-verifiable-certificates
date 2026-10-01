@@ -382,7 +382,7 @@ Snapshot de **2026-09-18** (commit `a87cfba`), apenas para orientar #19/#20. Nã
 | **GATE-09** | `template.json` corrigido em #4 (tinha sem `name`, o que **derrubava o CLI**) e validado contra o CLI 0.4.0 por execução real. **Ainda não verificado via GitHub:** repositório privado e sem push ([scaffold-compat.md](scaffold-compat.md) §8). |
 | GATE-10 / 11 | `README.md` e `AGENTS.md` presentes; comandos ainda "planejados". |
 | GATE-12 – 14 | Nenhuma transação Testnet registrada ainda. |
-| GATE-15 – 18 | Scripts raiz `dev`/`start`/`build`/`lint`/`check` existem (#4); install, lint, build e `check` passam num projeto gerado pelo CLI 0.4.0 (Node 20.18.3 e 24). Rota `/` responde 200. CI (`.github/workflows/`) ainda vazia (#14). |
+| GATE-15 – 18 | Scripts raiz `dev`/`start`/`build`/`lint`/`check` existem (#4); install, lint, build e `check` passam num projeto gerado pelo CLI 0.4.0 (Node 20.18.3 e 24). Rota `/` responde 200. `yarn self-check` verifica install, lint, build, boot e as rotas `/`, `/dashboard`, `/api/env/status` (GATE-09–11, 15–19) e roda na CI a cada push/PR ([self-check.md](self-check.md), #14). |
 | GATE-19 | `.env.example` com chaves vazias; não há `.env` versionado. |
 | RUB-01 | Provedor de oracle **pendente** (`docs/integration.md`). |
 
