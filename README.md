@@ -112,6 +112,7 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn build` | Compila SDK, contratos e app |
 | `yarn lint` | ESLint em todos os packages, sem warnings |
 | `yarn check` | `lint` + `check-types` + `test` (o que a CI executa) |
+| `yarn secrets:scan` | Secret scan (gitleaks) do histórico git completo e do working tree, com valores sempre ocultos. Requer `gitleaks` instalado. Ver [docs/security.md](docs/security.md) |
 | `yarn test` | Testes do SDK e dos contratos |
 
 Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.

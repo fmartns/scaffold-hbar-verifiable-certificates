@@ -1,0 +1,61 @@
+# Secret-scan rules for this repository. Run with `yarn secrets:scan` (scripts/secret-scan.mjs), which scans the full
+# git history (every ref) and the working tree. See docs/security.md (Secret scanning).
+#
+# The gitleaks default rules stay on. The rules below add the key formats this project actually handles (Hedera DER and
+# raw hex private keys, mnemonics), which the defaults do not recognise. Allowlists are narrow and documented: never
+# allowlist a whole test directory, and never add a real value here.
+
+title = "scaffold-hbar-verifiable-settlement"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "hedera-ed25519-der-private-key"
+description = "Hedera ED25519 private key, DER-encoded (PKCS#8, 48 bytes)"
+regex = '''(?i)\b(?:0x)?302e020100300506032b657004220420[0-9a-f]{64}\b'''
+keywords = ["302e020100300506032b657004220420"]
+
+[[rules]]
+id = "hedera-ecdsa-der-private-key"
+description = "Hedera ECDSA secp256k1 private key, DER-encoded"
+regex = '''(?i)\b(?:0x)?3030020100300706052b8104000a04220420[0-9a-f]{64}\b'''
+keywords = ["3030020100300706052b8104000a04220420"]
+
+[[rules]]
+id = "hex-private-key-assignment"
+description = "32-byte hex private key assigned to a key-like name (env file, config or code)"
+regex = '''(?i)(?:private[_-]?key|operator[_-]?key|signer[_-]?key|deployer[_-]?key|secret[_-]?key|privkey)["']?\s*[:=]\s*["'`]?((?:0x)?[0-9a-f]{64})\b'''
+secretGroup = 1
+keywords = ["key"]
+
+[[rules]]
+id = "mnemonic-assignment"
+description = "BIP-39 style mnemonic (12+ lowercase words) assigned to a mnemonic/seed name"
+regex = '''(?i)(?:mnemonic|seed[_-]?phrase|recovery[_-]?phrase)["']?\s*[:=]\s*["'`]?((?:[a-z]{3,8}\s+){11,23}[a-z]{3,8})'''
+secretGroup = 1
+keywords = ["mnemonic", "seed", "recovery"]
+
+# The `generic-api-key` default rule flags long hex values next to words like "key" or "hash". In this codebase these
+# names are public 32-byte identifiers, hashes and commitments that go on-chain or to HCS (ADR-001 §4.3,
+# docs/credential-registry.md), pinned as golden vectors in tests: they are not secrets. A private key never uses them.
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "Public on-chain identifiers, hashes and commitments, never secrets"
+regexTarget = "line"
+regexes = [
+  '''(?i)\b(?:eventKey|eventSource|externalEventId|streamId|contentHash|credentialId|credentialKey|externalCredentialId|credentialHash|subjectCommitment|schemaId|issuer|digest|attestationDigest)["']?\s*[:=]\s*["'`]0x[0-9a-f]{64}["'`]''',
+]
+
+[allowlist]
+description = "Vendored third-party code and generated output"
+paths = [
+  # Minified Yarn 3.2.3 release pinned by the template (identifiers such as `MismatchedTokenException=` trip entropy rules).
+  # Paths are unanchored at the start because `gitleaks dir` reports absolute paths.
+  '''(?:^|/)\.yarn/releases/yarn-[0-9.]+\.cjs$''',
+  '''(?:^|/)node_modules/''',
+  '''(?:^|/)\.next/''',
+  '''(?:^|/)packages/hardhat/(?:artifacts|cache|typechain-types|deployments)/''',
+  '''(?:^|/)yarn\.lock$''',
+]
