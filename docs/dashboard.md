@@ -2,7 +2,7 @@
 
 `/dashboard` shows at a glance whether the Hedera environment is usable: network, operator account and balance, the
 connected wallet, the deployed `CredentialRegistry`, the HCS evidence topic, and one health status per integration.
-It is about infrastructure, not about operating credentials: issuing and revoking belong to the issuer console (#12),
+It is about infrastructure, not about operating credentials: issuing and revoking belong to the issuer console (`/issuer`, [issuer-console.md](issuer-console.md)),
 checking a credential to the public verifier (#40).
 
 Open it with `yarn dev` and go to <http://localhost:3000/dashboard>. It renders without a `.env` (everything shows as
