@@ -13,18 +13,18 @@ import {
   auditCredential,
   computeCredentialDigest,
   computeCredentialId,
-  createCredentialMirror,
-  createCredentialStatusReader,
   credentialDomain,
   encodeCredentialMessage,
   readRegistryDeployment,
 } from "@sh/sdk";
-import type { CredentialAuditContext, CredentialEvent, HederaNetwork } from "@sh/sdk";
+import type { CredentialEvent, HederaNetwork } from "@sh/sdk";
+import { auditContext } from "@sh/sdk/testing";
+import type { FakeWorld } from "@sh/sdk/testing";
 
 /**
  * Cross-checks the SDK audit (#10) against the compiled CredentialRegistry (#9): the SDK's event topics (from the
  * generated ABI, #24), type strings and credentialId formula must match the contract, and an audit over REAL receipt logs must correlate.
- * The Mirror Node is simulated from those receipts; `statusOf` goes to the Hardhat node over eth_call.
+ * The shared fake Mirror Node is fed with those receipts; `statusOf` goes to the Hardhat node over eth_call.
  */
 const TOPIC = "0.0.4567";
 const HCS = { issuance: 5n, revocation: 9n };
@@ -113,71 +113,33 @@ describe("CredentialRegistry ↔ SDK audit", function () {
     await time.setNextBlockTimestamp(revokeBlockTs);
     const revokeReceipt = await (await registry.connect(issuerSigner).revoke(credentialId)).wait();
 
-    const mirrorLogs = [
-      ...issueReceipt!.logs.map(l => ({ ...l, ts: `${issueBlockTs}.000000001` })),
-      ...revokeReceipt!.logs.map(l => ({ ...l, ts: `${revokeBlockTs}.000000001` })),
-    ].map(l => ({
-      address: l.address.toLowerCase(),
-      topics: l.topics.map(t => t.toLowerCase()),
-      data: l.data,
-      index: l.index,
-      timestamp: l.ts,
-      transaction_hash: l.transactionHash,
-    }));
-    const mirrorMessages = [
-      {
-        sequence_number: Number(HCS.issuance),
-        consensus_timestamp: hcsIssuanceTs,
-        payer_account_id: "0.0.1001",
-        topic_id: TOPIC,
-        message: Buffer.from(encodeCredentialMessage({ kind: "issuance", event, signature: issuanceSig })).toString(
-          "base64",
-        ),
-      },
-      {
-        sequence_number: Number(HCS.revocation),
-        consensus_timestamp: hcsRevocationTs,
-        payer_account_id: "0.0.1001",
-        topic_id: TOPIC,
-        message: Buffer.from(
-          encodeCredentialMessage({ kind: "revocation", revocation, signature: revocationSig }),
-        ).toString("base64"),
-      },
-    ];
-
-    const inRange = (ts: string, params: URLSearchParams) =>
-      params.getAll("timestamp").every(f => {
-        const [op, value] = f.split(":");
-        return op === "gte" ? Number(ts) >= Number(value) : Number(ts) <= Number(value);
-      });
-    const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
-      if (init?.method === "POST") {
-        const { params } = JSON.parse(String(init.body));
-        const result = await ethers.provider.send("eth_call", params);
-        return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }));
-      }
-      const url = new URL(String(input));
-      const path = url.pathname.replace(/^\/api\/v1/, "");
-      const one = /\/topics\/[^/]+\/messages\/(\d+)$/.exec(path);
-      if (one) {
-        const m = mirrorMessages.find(x => String(x.sequence_number) === one[1]);
-        return new Response(JSON.stringify(m ?? {}), { status: m ? 200 : 404 });
-      }
-      if (/\/topics\/[^/]+\/messages$/.test(path)) {
-        const messages = mirrorMessages.filter(m => inRange(m.consensus_timestamp, url.searchParams));
-        return new Response(JSON.stringify({ messages, links: { next: null } }));
-      }
-      if (/\/contracts\/[^/]+\/results\/logs$/.test(path)) {
-        const topic0 = url.searchParams.get("topic0");
-        const topic1 = url.searchParams.get("topic1");
-        const logs = mirrorLogs.filter(
-          l => l.topics[0] === topic0 && (!topic1 || l.topics[1] === topic1) && inRange(l.timestamp, url.searchParams),
-        );
-        return new Response(JSON.stringify({ logs, links: { next: null } }));
-      }
-      return new Response("{}", { status: 404 });
-    }) as typeof fetch;
-
+    const world: FakeWorld = {
+      topicId: TOPIC,
+      records: new Map(),
+      rpc: (params, method) => ethers.provider.send(method, params),
+      logs: [
+        ...issueReceipt!.logs.map(l => ({ ...l, ts: `${issueBlockTs}.000000001` })),
+        ...revokeReceipt!.logs.map(l => ({ ...l, ts: `${revokeBlockTs}.000000001` })),
+      ].map(l => ({
+        address: l.address,
+        topics: l.topics.map(t => t.toLowerCase()),
+        data: l.data,
+        consensusTimestamp: l.ts,
+        transactionHash: l.transactionHash.toLowerCase(),
+      })),
+      messages: [
+        {
+          sequence: HCS.issuance,
+          consensusTimestamp: hcsIssuanceTs,
+          bytes: encodeCredentialMessage({ kind: "issuance", event, signature: issuanceSig }),
+        },
+        {
+          sequence: HCS.revocation,
+          consensusTimestamp: hcsRevocationTs,
+          bytes: encodeCredentialMessage({ kind: "revocation", revocation, signature: revocationSig }),
+        },
+      ],
+    };
     const network: HederaNetwork = {
       name: "local",
       chainId: Number(domain.chainId),
@@ -185,15 +147,12 @@ describe("CredentialRegistry ↔ SDK audit", function () {
       mirrorNodeUrl: "http://127.0.0.1:5551",
       hashscanUrl: null,
     };
-    const ctx: CredentialAuditContext = {
+    const { ctx } = auditContext(world, {
       network,
       registryAddress,
-      topicId: TOPIC,
-      mirror: createCredentialMirror(network, { fetch: fakeFetch }),
-      registry: createCredentialStatusReader({ network, registryAddress, fetch: fakeFetch }),
       pollTimeoutMs: 0,
-      now: () => Number(revokeBlockTs + 30n) * 1000,
-    };
+      nowSeconds: revokeBlockTs + 30n,
+    });
 
     const report = await auditCredential(credentialId, ctx);
     expect(report.findings, JSON.stringify(report.findings)).to.deep.equal([]);

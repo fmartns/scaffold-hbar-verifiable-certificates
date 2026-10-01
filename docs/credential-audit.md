@@ -97,10 +97,12 @@ never collides with the settlement envelope (`0x01`).
 
 ## Tests
 
-- Unit tests (`packages/sdk/hedera/audit/*.test.ts`, no network) use deterministic fixtures shaped like the Mirror REST
-  and JSON-RPC answers. They include indexing lag (records hidden for N reads), forced HTTP failures, and a virtual
+- Unit tests (`packages/sdk/hedera/audit/*.test.ts`, no network) use the shared deterministic fixtures
+  (`@sh/sdk/testing`, see [testing.md](testing.md)) shaped like the Mirror REST and JSON-RPC answers. They include indexing lag (records hidden for N reads), forced HTTP failures, and a virtual
   clock so polling is exact and instant.
 - `packages/hardhat/test/CredentialAudit.test.ts` pins the SDK's event signatures, type string, `credentialId` formula
   and digest to the compiled contract. It then audits a real issuance and revocation from actual receipt logs.
+- `packages/hardhat/test/CredentialLifecycle.flow.test.ts` drives issuer → HCS → registry → audit end to end, including
+  failed publication, Mirror lag, mismatched evidence, replays and admin revocation.
 - `audit.integration.test.ts` runs against the real Testnet Mirror Node. It is opt-in because real indexing latency
   makes it timing-dependent: `AUDIT_INTEGRATION=1 AUDIT_CREDENTIAL_ID=0x... yarn workspace @sh/sdk test:integration`.
