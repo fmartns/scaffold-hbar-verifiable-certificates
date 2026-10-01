@@ -7,6 +7,7 @@ import "@nomicfoundation/hardhat-verify";
 import "@typechain/hardhat";
 import "hardhat-deploy";
 import "hardhat-deploy-ethers";
+import "solidity-coverage";
 import { HARDHAT_NETWORK_NAMES, getNetwork } from "@sh/sdk";
 import { runCodegen } from "./scripts/generateTsAbis";
 

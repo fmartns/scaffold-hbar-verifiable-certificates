@@ -5,12 +5,14 @@
   "scripts": {
     "build": "next build",
     "check-types": "tsc --noEmit --incremental",
+    "coverage": "vitest run --coverage",
     "dev": "next dev",
     "format": "prettier --write . '!(node_modules|.next)/**/*'",
     "lint": "eslint . --max-warnings=0",
     "lint-staged": "eslint --max-warnings=0 --no-warn-ignored",
     "serve": "next start",
-    "start": "next dev"
+    "start": "next dev",
+    "test": "vitest run"
   },
   "dependencies": {
     "@sh/sdk": "workspace:*",
@@ -20,15 +22,21 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@testing-library/dom": "^10",
+    "@testing-library/react": "^16",
     "@types/node": "^20.19.8",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.4",
+    "jsdom": "^26",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
   },
   "packageManager": "yarn@3.2.3"
 }

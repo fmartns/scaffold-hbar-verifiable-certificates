@@ -1,132 +1,18 @@
-import { AbiCoder, Interface } from "ethers";
 import { describe, expect, it } from "vitest";
-import { CREDENTIAL_REGISTRY_ABI } from "./audit/registry";
+import {
+  HBAR,
+  HEALTH_ACCOUNT as ACCOUNT,
+  HEALTH_REGISTRY as REGISTRY,
+  HEALTH_SECRET_KEY as SECRET_KEY,
+  HEALTH_TOPIC as TOPIC,
+  healthEnv as fullEnv,
+  healthReport as check,
+} from "../testing/network";
+import type { FakeNetworkOptions as FakeOptions } from "../testing/network";
 import type { GeneratedDeployments } from "./contracts";
-import type { KeyInspector } from "./environment";
-import { INTEGRATION_IDS, checkHederaHealth, lookupEvmAccount } from "./health";
+import { INTEGRATION_IDS, lookupEvmAccount } from "./health";
 import type { HederaHealthReport } from "./health";
 import { NETWORKS } from "./networks";
-
-const ACCOUNT = "0.0.1234";
-const PUBLIC_KEY = "ab".repeat(32);
-const SECRET_KEY = "cd".repeat(32);
-const TOPIC = "0.0.4567";
-const REGISTRY = `0x${"12".repeat(20)}`;
-const HBAR = 100_000_000n;
-
-const now = () => new Date("2026-09-18T12:00:00.000Z");
-const NOW_S = Math.floor(now().getTime() / 1000);
-
-const MIRROR = new URL(NETWORKS.testnet.mirrorNodeUrl).host;
-const RELAY = new URL(NETWORKS.testnet.rpcUrl).host;
-
-const REGISTRY_IFACE = new Interface(CREDENTIAL_REGISTRY_ABI);
-const SELECTOR = {
-  hcsTopicNum: REGISTRY_IFACE.getFunction("hcsTopicNum")!.selector,
-  paused: REGISTRY_IFACE.getFunction("paused")!.selector,
-};
-const abi = AbiCoder.defaultAbiCoder();
-
-type Key = { type: string; key: string } | null;
-
-interface FakeOptions {
-  balance?: bigint;
-  mirror?: "up" | "down" | "not-a-mirror";
-  lagSeconds?: number;
-  relayChainId?: number | "down";
-  /** `false`: no contract at the address (eth_call answers `0x`). */
-  registry?: { topicNum?: bigint; paused?: boolean } | false;
-  topic?: { submitKey?: Key; deleted?: boolean } | "missing";
-  contractId?: string | null;
-  /** Hosts that answer like the testnet ones (endpoint overrides). */
-  mirrorHost?: string;
-  relayHost?: string;
-  /** Generated deployment manifest; empty by default so tests do not depend on the committed one. */
-  manifest?: GeneratedDeployments;
-}
-
-/** In-memory Mirror Node and relay for the selected testnet. Records every request as `METHOD host/path`. */
-function fakeNetwork(options: FakeOptions = {}) {
-  const calls: string[] = [];
-  const mirrorHost = options.mirrorHost ?? MIRROR;
-  const relayHost = options.relayHost ?? RELAY;
-  const impl = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(String(input));
-    calls.push(`${init?.method ?? "GET"} ${url.host}${url.pathname}`);
-
-    if (url.host === relayHost && init?.method === "POST") {
-      if (options.relayChainId === "down") throw new Error("connect ECONNREFUSED");
-      const { method, params } = JSON.parse(String(init.body)) as { method: string; params: [{ data: string }] };
-      const answer = (result: string) => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }));
-      if (method === "eth_chainId") return answer(`0x${(options.relayChainId ?? 296).toString(16)}`);
-      if (method === "eth_call") {
-        if (options.registry === false) return answer("0x");
-        const registry = options.registry ?? {};
-        const data = params[0].data;
-        if (data === SELECTOR.hcsTopicNum) return answer(abi.encode(["uint64"], [registry.topicNum ?? 4567n]));
-        if (data === SELECTOR.paused) return answer(abi.encode(["bool"], [registry.paused ?? false]));
-      }
-      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, error: { code: -32601 } }));
-    }
-
-    if (url.host !== mirrorHost || options.mirror === "down") throw new Error("connect ECONNREFUSED");
-    if (options.mirror === "not-a-mirror") return new Response("<html>hello</html>");
-    const path = url.pathname.replace(/^\/api\/v1/, "");
-
-    if (path === "/blocks") {
-      const to = `${NOW_S - (options.lagSeconds ?? 4)}.000000001`;
-      return new Response(JSON.stringify({ blocks: [{ number: 987, timestamp: { from: "1.0", to } }] }));
-    }
-    if (path === `/accounts/${ACCOUNT}`) {
-      return new Response(
-        `{"account":"${ACCOUNT}","deleted":false,"balance":{"balance":${options.balance ?? 100n * HBAR},"timestamp":"1.0","tokens":[]},"key":{"_type":"ED25519","key":"${PUBLIC_KEY}"}}`,
-      );
-    }
-    if (path === `/topics/${TOPIC}`) {
-      if (options.topic === "missing") return new Response("{}", { status: 404 });
-      const topic = options.topic ?? {};
-      const submitKey = topic.submitKey === undefined ? { type: "ED25519", key: PUBLIC_KEY } : topic.submitKey;
-      return new Response(
-        JSON.stringify({
-          topic_id: TOPIC,
-          memo: "evidence",
-          deleted: topic.deleted ?? false,
-          submit_key: submitKey && { _type: submitKey.type, key: submitKey.key },
-        }),
-      );
-    }
-    if (path === `/contracts/${REGISTRY}`) {
-      const contractId = options.contractId === undefined ? "0.0.7777" : options.contractId;
-      return contractId
-        ? new Response(JSON.stringify({ contract_id: contractId, evm_address: REGISTRY }))
-        : new Response("{}", { status: 404 });
-    }
-    return new Response("{}", { status: 404 });
-  }) as typeof fetch;
-  return { fetch: impl, calls };
-}
-
-const inspectMatching: KeyInspector = async key =>
-  key === SECRET_KEY ? [{ type: "ED25519", publicKey: PUBLIC_KEY }] : null;
-
-const fullEnv = {
-  HEDERA_NETWORK: "testnet",
-  HEDERA_OPERATOR_ID: ACCOUNT,
-  HEDERA_OPERATOR_KEY: SECRET_KEY,
-  HEDERA_HCS_TOPIC_ID: TOPIC,
-  HEDERA_CREDENTIAL_REGISTRY_ADDRESS: REGISTRY,
-};
-
-async function check(env: Record<string, string | undefined>, options: FakeOptions = {}) {
-  const net = fakeNetwork(options);
-  const report = await checkHederaHealth(env, {
-    fetch: net.fetch,
-    inspectKey: inspectMatching,
-    now,
-    manifest: options.manifest ?? {},
-  });
-  return { report, calls: net.calls };
-}
 
 const statuses = (report: HederaHealthReport) =>
   Object.fromEntries(INTEGRATION_IDS.map(id => [id, report.integrations[id].status]));

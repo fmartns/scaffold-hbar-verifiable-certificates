@@ -45,3 +45,6 @@ gitleaks-report*.json
 # build output
 dist
 *.tsbuildinfo
+
+# test coverage reports
+coverage
