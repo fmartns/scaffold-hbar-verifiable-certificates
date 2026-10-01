@@ -1,0 +1,670 @@
+{
+  "schemaVersion": 1,
+  "kind": "testnet-credential-validation",
+  "runId": "20261001T181216Z",
+  "ok": true,
+  "plan": {
+    "network": "testnet",
+    "chainId": 296,
+    "operatorId": "0.0.9327439",
+    "balance": {
+      "tinybars": "99822486995",
+      "hbar": "998.22486995"
+    },
+    "registry": {
+      "address": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+      "source": "manifest",
+      "contractId": "0.0.10812888",
+      "hashscanUrl": "https://hashscan.io/testnet/contract/0.0.10812888"
+    },
+    "topic": {
+      "id": "0.0.10812882",
+      "hashscanUrl": "https://hashscan.io/testnet/topic/0.0.10812882"
+    },
+    "issuer": {
+      "name": "scaffold-hbar-verify",
+      "id": "0xb03d5933a881c89b2d3ae2e4fd0b66f3d42569719e2cfbcffe4d3e04d8163c82",
+      "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+      "register": true
+    },
+    "runs": 2,
+    "cost": {
+      "hcsMessages": 4,
+      "hcsPerMessage": {
+        "usd": "0.0005",
+        "hbar": "0.0049"
+      },
+      "contractCalls": [
+        {
+          "call": "registerIssuer",
+          "count": 1,
+          "gas": "120000"
+        },
+        {
+          "call": "issue",
+          "count": 2,
+          "gas": "350000"
+        },
+        {
+          "call": "revoke",
+          "count": 2,
+          "gas": "100000"
+        }
+      ],
+      "gasPriceWeibars": "870000000000",
+      "totalHbar": "0.90692484",
+      "totalUsd": "0.093",
+      "usdPerHbar": "0.1024"
+    }
+  },
+  "result": {
+    "ok": true,
+    "registration": {
+      "transactionHash": "0x48792ae073c595998f0ff12c5e981f2c89216b372cfa1cb0ae91ea5437411d57",
+      "hashscanUrl": "https://hashscan.io/testnet/transaction/0x48792ae073c595998f0ff12c5e981f2c89216b372cfa1cb0ae91ea5437411d57",
+      "mirrorUrl": "https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0x48792ae073c595998f0ff12c5e981f2c89216b372cfa1cb0ae91ea5437411d57",
+      "durationMs": 4885
+    },
+    "runs": [
+      {
+        "index": 1,
+        "reference": "VERIFY-20261001T181216Z-1",
+        "credentialId": "0x81fb3eac554acc87d8005e882daf8dbdfdce3a70e47f97c8c6e8f3159b5ffff3",
+        "blockedAttempts": [
+          {
+            "attempt": "replay_signed_issuance",
+            "description": "Replay the exact signed issuance with its HCS reference (eth_call of issue)",
+            "blocked": true,
+            "code": "AlreadyIssued",
+            "nothingPaid": true
+          },
+          {
+            "attempt": "reissue_same_reference",
+            "description": "Issue the same reference again with a fresh holder salt (full issuer flow)",
+            "blocked": true,
+            "code": "ConflictingCredential",
+            "nothingPaid": true
+          },
+          {
+            "attempt": "revoke_again",
+            "description": "Revoke the already revoked credential again (full issuer flow)",
+            "blocked": true,
+            "code": "AlreadyRevoked",
+            "nothingPaid": true
+          }
+        ],
+        "ok": true,
+        "issuance": {
+          "hcs": {
+            "transactionId": "0.0.9327439@1790878337.750880065",
+            "sequence": "1",
+            "consensusTimestamp": "1790878342.550224803",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803",
+            "mirrorMessageUrl": "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10812882/messages/1"
+          },
+          "registry": {
+            "transactionHash": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443",
+            "mirrorUrl": "https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7"
+          },
+          "durationMs": 6441,
+          "steps": {
+            "build": 183,
+            "sign": 9,
+            "simulate": 306,
+            "publish": 1580,
+            "register": 590,
+            "confirm": 3772
+          }
+        },
+        "auditAfterIssuance": {
+          "evidence": "consistent",
+          "onChainStatus": "issued",
+          "ok": true,
+          "attempts": 1,
+          "elapsedMs": 774,
+          "issuanceMatched": true,
+          "revocationMatched": null,
+          "findings": [],
+          "timeline": [
+            {
+              "step": "hcs.issuance",
+              "consensusTimestamp": "1790878342.550224803",
+              "reference": "0.0.10812882#1",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+            },
+            {
+              "step": "chain.issued",
+              "consensusTimestamp": "1790878343.849259443",
+              "reference": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443"
+            }
+          ],
+          "report": {
+            "credentialId": "0x81fb3eac554acc87d8005e882daf8dbdfdce3a70e47f97c8c6e8f3159b5ffff3",
+            "subject": {
+              "kind": "credential"
+            },
+            "onChain": {
+              "status": "issued",
+              "record": {
+                "status": "issued",
+                "issuer": "0xb03d5933a881c89b2d3ae2e4fd0b66f3d42569719e2cfbcffe4d3e04d8163c82",
+                "credentialHash": "0xf5e9b7998d5fcf7c19f68752769420f68da94fd661ade17b59c388f2a118614c",
+                "subjectCommitment": "0x59c0caecf8a324b35f16e936711729547461bebd24854e8452a4fcc922045fdd",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "issuedAt": "1790878342",
+                "revokedAt": "0"
+              }
+            },
+            "issuance": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "1",
+                "consensusTimestamp": "1790878342.550224803",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0x3d31ca8336351401b6f892a27346aa3fe95a6a5bf58c6a5e84fe9c24c42e166f",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+              },
+              "onChain": {
+                "transactionHash": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+                "consensusTimestamp": "1790878343.849259443",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "attestationDigest": "0x3d31ca8336351401b6f892a27346aa3fe95a6a5bf58c6a5e84fe9c24c42e166f",
+                "schemaId": "0xd23903e5fe94d3ee4a2cc30b31b5c511a6ab87320256fa6e14b0cc7075866393",
+                "hcsSequence": "1",
+                "hcsConsensusTimestampNs": "1790878342550224803"
+              },
+              "matched": true
+            },
+            "revocation": null,
+            "evidence": "consistent",
+            "timeline": [
+              {
+                "step": "hcs.issuance",
+                "consensusTimestamp": "1790878342.550224803",
+                "reference": "0.0.10812882#1",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+              },
+              {
+                "step": "chain.issued",
+                "consensusTimestamp": "1790878343.849259443",
+                "reference": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443"
+              }
+            ],
+            "findings": [],
+            "provenance": {
+              "network": "testnet",
+              "mirrorNode": "https://testnet.mirrornode.hedera.com",
+              "rpc": "https://testnet.hashio.io",
+              "registryAddress": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+              "topicId": "0.0.10812882",
+              "queriedAt": "2026-10-01T18:12:27.391Z",
+              "highestConsensusTimestampSeen": "1790878343.849259443"
+            }
+          }
+        },
+        "revocation": {
+          "hcs": {
+            "transactionId": "0.0.9327439@1790878343.615569144",
+            "sequence": "2",
+            "consensusTimestamp": "1790878350.830367104",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878350.830367104",
+            "mirrorMessageUrl": "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10812882/messages/2"
+          },
+          "registry": {
+            "transactionHash": "0xb74a8f1a2c43498a63f4ad48657f7fbdbbc2014fb72f18fbebf2df541241ed1f",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878353.074479834",
+            "mirrorUrl": "https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xb74a8f1a2c43498a63f4ad48657f7fbdbbc2014fb72f18fbebf2df541241ed1f"
+          },
+          "durationMs": 7935,
+          "steps": {
+            "status": 369,
+            "sign": 8,
+            "simulate": 192,
+            "publish": 2754,
+            "revoke": 560,
+            "confirm": 4051
+          }
+        },
+        "auditAfterRevocation": {
+          "evidence": "consistent",
+          "onChainStatus": "revoked",
+          "ok": true,
+          "attempts": 1,
+          "elapsedMs": 1003,
+          "issuanceMatched": true,
+          "revocationMatched": true,
+          "findings": [],
+          "timeline": [
+            {
+              "step": "hcs.issuance",
+              "consensusTimestamp": "1790878342.550224803",
+              "reference": "0.0.10812882#1",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+            },
+            {
+              "step": "chain.issued",
+              "consensusTimestamp": "1790878343.849259443",
+              "reference": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443"
+            },
+            {
+              "step": "hcs.revocation",
+              "consensusTimestamp": "1790878350.830367104",
+              "reference": "0.0.10812882#2",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878350.830367104"
+            },
+            {
+              "step": "chain.revoked",
+              "consensusTimestamp": "1790878353.074479834",
+              "reference": "0xb74a8f1a2c43498a63f4ad48657f7fbdbbc2014fb72f18fbebf2df541241ed1f",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878353.074479834"
+            }
+          ],
+          "report": {
+            "credentialId": "0x81fb3eac554acc87d8005e882daf8dbdfdce3a70e47f97c8c6e8f3159b5ffff3",
+            "subject": {
+              "kind": "credential"
+            },
+            "onChain": {
+              "status": "revoked",
+              "record": {
+                "status": "revoked",
+                "issuer": "0xb03d5933a881c89b2d3ae2e4fd0b66f3d42569719e2cfbcffe4d3e04d8163c82",
+                "credentialHash": "0xf5e9b7998d5fcf7c19f68752769420f68da94fd661ade17b59c388f2a118614c",
+                "subjectCommitment": "0x59c0caecf8a324b35f16e936711729547461bebd24854e8452a4fcc922045fdd",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "issuedAt": "1790878342",
+                "revokedAt": "1790878352"
+              }
+            },
+            "issuance": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "1",
+                "consensusTimestamp": "1790878342.550224803",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0x3d31ca8336351401b6f892a27346aa3fe95a6a5bf58c6a5e84fe9c24c42e166f",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+              },
+              "onChain": {
+                "transactionHash": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+                "consensusTimestamp": "1790878343.849259443",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "attestationDigest": "0x3d31ca8336351401b6f892a27346aa3fe95a6a5bf58c6a5e84fe9c24c42e166f",
+                "schemaId": "0xd23903e5fe94d3ee4a2cc30b31b5c511a6ab87320256fa6e14b0cc7075866393",
+                "hcsSequence": "1",
+                "hcsConsensusTimestampNs": "1790878342550224803"
+              },
+              "matched": true
+            },
+            "revocation": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "2",
+                "consensusTimestamp": "1790878350.830367104",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0xe4951798c6bd42535e5a86ad432b61922ed8cf980afc4afeb5fb2962ae9d7e73",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878350.830367104",
+                "reasonCode": "0xf45decb5876d60e815cd102f2acc0ed116759e5c0a999866a0d6e40c93aaa51f"
+              },
+              "onChain": {
+                "transactionHash": "0xb74a8f1a2c43498a63f4ad48657f7fbdbbc2014fb72f18fbebf2df541241ed1f",
+                "consensusTimestamp": "1790878353.074479834",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878353.074479834",
+                "revokedBy": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "byAdmin": false
+              },
+              "matched": true
+            },
+            "evidence": "consistent",
+            "timeline": [
+              {
+                "step": "hcs.issuance",
+                "consensusTimestamp": "1790878342.550224803",
+                "reference": "0.0.10812882#1",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878342.550224803"
+              },
+              {
+                "step": "chain.issued",
+                "consensusTimestamp": "1790878343.849259443",
+                "reference": "0xcbaea33e96df7955ce9bb12edf8310feef7be5d4b4705c2a9750b4ea44bd36c7",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878343.849259443"
+              },
+              {
+                "step": "hcs.revocation",
+                "consensusTimestamp": "1790878350.830367104",
+                "reference": "0.0.10812882#2",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878350.830367104"
+              },
+              {
+                "step": "chain.revoked",
+                "consensusTimestamp": "1790878353.074479834",
+                "reference": "0xb74a8f1a2c43498a63f4ad48657f7fbdbbc2014fb72f18fbebf2df541241ed1f",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878353.074479834"
+              }
+            ],
+            "findings": [],
+            "provenance": {
+              "network": "testnet",
+              "mirrorNode": "https://testnet.mirrornode.hedera.com",
+              "rpc": "https://testnet.hashio.io",
+              "registryAddress": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+              "topicId": "0.0.10812882",
+              "queriedAt": "2026-10-01T18:12:36.751Z",
+              "highestConsensusTimestampSeen": "1790878353.074479834"
+            }
+          }
+        }
+      },
+      {
+        "index": 2,
+        "reference": "VERIFY-20261001T181216Z-2",
+        "credentialId": "0x62157e275d063af0ee9a0489a0e6f7a9de4b040e2e4c57d28cc7de7121f116e2",
+        "blockedAttempts": [
+          {
+            "attempt": "replay_signed_issuance",
+            "description": "Replay the exact signed issuance with its HCS reference (eth_call of issue)",
+            "blocked": true,
+            "code": "AlreadyIssued",
+            "nothingPaid": true
+          },
+          {
+            "attempt": "reissue_same_reference",
+            "description": "Issue the same reference again with a fresh holder salt (full issuer flow)",
+            "blocked": true,
+            "code": "ConflictingCredential",
+            "nothingPaid": true
+          },
+          {
+            "attempt": "revoke_again",
+            "description": "Revoke the already revoked credential again (full issuer flow)",
+            "blocked": true,
+            "code": "AlreadyRevoked",
+            "nothingPaid": true
+          }
+        ],
+        "ok": true,
+        "issuance": {
+          "hcs": {
+            "transactionId": "0.0.9327439@1790878351.249797098",
+            "sequence": "3",
+            "consensusTimestamp": "1790878359.727987346",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346",
+            "mirrorMessageUrl": "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10812882/messages/3"
+          },
+          "registry": {
+            "transactionHash": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104",
+            "mirrorUrl": "https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572"
+          },
+          "durationMs": 8056,
+          "steps": {
+            "build": 184,
+            "sign": 8,
+            "simulate": 241,
+            "publish": 1662,
+            "register": 2095,
+            "confirm": 3866
+          }
+        },
+        "auditAfterIssuance": {
+          "evidence": "consistent",
+          "onChainStatus": "issued",
+          "ok": true,
+          "attempts": 1,
+          "elapsedMs": 1174,
+          "issuanceMatched": true,
+          "revocationMatched": null,
+          "findings": [],
+          "timeline": [
+            {
+              "step": "hcs.issuance",
+              "consensusTimestamp": "1790878359.727987346",
+              "reference": "0.0.10812882#3",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+            },
+            {
+              "step": "chain.issued",
+              "consensusTimestamp": "1790878362.710101104",
+              "reference": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104"
+            }
+          ],
+          "report": {
+            "credentialId": "0x62157e275d063af0ee9a0489a0e6f7a9de4b040e2e4c57d28cc7de7121f116e2",
+            "subject": {
+              "kind": "credential"
+            },
+            "onChain": {
+              "status": "issued",
+              "record": {
+                "status": "issued",
+                "issuer": "0xb03d5933a881c89b2d3ae2e4fd0b66f3d42569719e2cfbcffe4d3e04d8163c82",
+                "credentialHash": "0x4492bd2b73fdc41b03d266673f8b5eb44bafa48c26028f42c9a026ca28fba1f0",
+                "subjectCommitment": "0x5f19c2768f2490603402d6cba0e49e90fd962ba0a3f9cba96ab59241a0fa8a30",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "issuedAt": "1790878361",
+                "revokedAt": "0"
+              }
+            },
+            "issuance": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "3",
+                "consensusTimestamp": "1790878359.727987346",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0xea0c371938fc747bcbc12dc02cb729dcba18fcbc7623ee18d6914dce2f19d30e",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+              },
+              "onChain": {
+                "transactionHash": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+                "consensusTimestamp": "1790878362.710101104",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "attestationDigest": "0xea0c371938fc747bcbc12dc02cb729dcba18fcbc7623ee18d6914dce2f19d30e",
+                "schemaId": "0xd23903e5fe94d3ee4a2cc30b31b5c511a6ab87320256fa6e14b0cc7075866393",
+                "hcsSequence": "3",
+                "hcsConsensusTimestampNs": "1790878359727987346"
+              },
+              "matched": true
+            },
+            "revocation": null,
+            "evidence": "consistent",
+            "timeline": [
+              {
+                "step": "hcs.issuance",
+                "consensusTimestamp": "1790878359.727987346",
+                "reference": "0.0.10812882#3",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+              },
+              {
+                "step": "chain.issued",
+                "consensusTimestamp": "1790878362.710101104",
+                "reference": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104"
+              }
+            ],
+            "findings": [],
+            "provenance": {
+              "network": "testnet",
+              "mirrorNode": "https://testnet.mirrornode.hedera.com",
+              "rpc": "https://testnet.hashio.io",
+              "registryAddress": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+              "topicId": "0.0.10812882",
+              "queriedAt": "2026-10-01T18:12:46.285Z",
+              "highestConsensusTimestampSeen": "1790878362.710101104"
+            }
+          }
+        },
+        "revocation": {
+          "hcs": {
+            "transactionId": "0.0.9327439@1790878363.107586840",
+            "sequence": "4",
+            "consensusTimestamp": "1790878370.228018939",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878370.228018939",
+            "mirrorMessageUrl": "https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10812882/messages/4"
+          },
+          "registry": {
+            "transactionHash": "0xb9cbc3fa607432c5cf32dfe4c52c90cf9921b4bfef6b7038a69f8fcd0dbf73b9",
+            "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878372.190174104",
+            "mirrorUrl": "https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xb9cbc3fa607432c5cf32dfe4c52c90cf9921b4bfef6b7038a69f8fcd0dbf73b9"
+          },
+          "durationMs": 7765,
+          "steps": {
+            "status": 400,
+            "sign": 7,
+            "simulate": 200,
+            "publish": 2616,
+            "revoke": 500,
+            "confirm": 4042
+          }
+        },
+        "auditAfterRevocation": {
+          "evidence": "consistent",
+          "onChainStatus": "revoked",
+          "ok": true,
+          "attempts": 1,
+          "elapsedMs": 1061,
+          "issuanceMatched": true,
+          "revocationMatched": true,
+          "findings": [],
+          "timeline": [
+            {
+              "step": "hcs.issuance",
+              "consensusTimestamp": "1790878359.727987346",
+              "reference": "0.0.10812882#3",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+            },
+            {
+              "step": "chain.issued",
+              "consensusTimestamp": "1790878362.710101104",
+              "reference": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104"
+            },
+            {
+              "step": "hcs.revocation",
+              "consensusTimestamp": "1790878370.228018939",
+              "reference": "0.0.10812882#4",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878370.228018939"
+            },
+            {
+              "step": "chain.revoked",
+              "consensusTimestamp": "1790878372.190174104",
+              "reference": "0xb9cbc3fa607432c5cf32dfe4c52c90cf9921b4bfef6b7038a69f8fcd0dbf73b9",
+              "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878372.190174104"
+            }
+          ],
+          "report": {
+            "credentialId": "0x62157e275d063af0ee9a0489a0e6f7a9de4b040e2e4c57d28cc7de7121f116e2",
+            "subject": {
+              "kind": "credential"
+            },
+            "onChain": {
+              "status": "revoked",
+              "record": {
+                "status": "revoked",
+                "issuer": "0xb03d5933a881c89b2d3ae2e4fd0b66f3d42569719e2cfbcffe4d3e04d8163c82",
+                "credentialHash": "0x4492bd2b73fdc41b03d266673f8b5eb44bafa48c26028f42c9a026ca28fba1f0",
+                "subjectCommitment": "0x5f19c2768f2490603402d6cba0e49e90fd962ba0a3f9cba96ab59241a0fa8a30",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "issuedAt": "1790878361",
+                "revokedAt": "1790878371"
+              }
+            },
+            "issuance": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "3",
+                "consensusTimestamp": "1790878359.727987346",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0xea0c371938fc747bcbc12dc02cb729dcba18fcbc7623ee18d6914dce2f19d30e",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+              },
+              "onChain": {
+                "transactionHash": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+                "consensusTimestamp": "1790878362.710101104",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "attestationDigest": "0xea0c371938fc747bcbc12dc02cb729dcba18fcbc7623ee18d6914dce2f19d30e",
+                "schemaId": "0xd23903e5fe94d3ee4a2cc30b31b5c511a6ab87320256fa6e14b0cc7075866393",
+                "hcsSequence": "3",
+                "hcsConsensusTimestampNs": "1790878359727987346"
+              },
+              "matched": true
+            },
+            "revocation": {
+              "hcs": {
+                "topicId": "0.0.10812882",
+                "sequence": "4",
+                "consensusTimestamp": "1790878370.228018939",
+                "payerAccountId": "0.0.9327439",
+                "signer": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "digest": "0x6b654a0a6cdd721d3516264b3fae8c95e5a657923ce49b678df4f2b310428877",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878370.228018939",
+                "reasonCode": "0xf45decb5876d60e815cd102f2acc0ed116759e5c0a999866a0d6e40c93aaa51f"
+              },
+              "onChain": {
+                "transactionHash": "0xb9cbc3fa607432c5cf32dfe4c52c90cf9921b4bfef6b7038a69f8fcd0dbf73b9",
+                "consensusTimestamp": "1790878372.190174104",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878372.190174104",
+                "revokedBy": "0x07d65d430d740afbf27ec7b9a6975d96474c6db1",
+                "byAdmin": false
+              },
+              "matched": true
+            },
+            "evidence": "consistent",
+            "timeline": [
+              {
+                "step": "hcs.issuance",
+                "consensusTimestamp": "1790878359.727987346",
+                "reference": "0.0.10812882#3",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878359.727987346"
+              },
+              {
+                "step": "chain.issued",
+                "consensusTimestamp": "1790878362.710101104",
+                "reference": "0x75aaa7448c186b6b469295d639166115335598f25fcbd572c13bef5133e8f572",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878362.710101104"
+              },
+              {
+                "step": "hcs.revocation",
+                "consensusTimestamp": "1790878370.228018939",
+                "reference": "0.0.10812882#4",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878370.228018939"
+              },
+              {
+                "step": "chain.revoked",
+                "consensusTimestamp": "1790878372.190174104",
+                "reference": "0xb9cbc3fa607432c5cf32dfe4c52c90cf9921b4bfef6b7038a69f8fcd0dbf73b9",
+                "hashscanUrl": "https://hashscan.io/testnet/transaction/1790878372.190174104"
+              }
+            ],
+            "findings": [],
+            "provenance": {
+              "network": "testnet",
+              "mirrorNode": "https://testnet.mirrornode.hedera.com",
+              "rpc": "https://testnet.hashio.io",
+              "registryAddress": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+              "topicId": "0.0.10812882",
+              "queriedAt": "2026-10-01T18:12:55.951Z",
+              "highestConsensusTimestampSeen": "1790878372.190174104"
+            }
+          }
+        }
+      }
+    ],
+    "startedAt": "2026-10-01T18:12:16.063Z",
+    "finishedAt": "2026-10-01T18:12:57.507Z",
+    "durationMs": 41444
+  }
+}
