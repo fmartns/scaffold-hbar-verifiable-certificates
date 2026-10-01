@@ -4,11 +4,11 @@ How this repository behaves as a `create-scaffold-hbar` template, what the CLI a
 
 | Field | Value |
 |---|---|
-| Validated on | **2026-09-18** |
-| Against | `create-scaffold-hbar@0.4.0` (npm `latest`; source `hedera-dev/create-scaffold-hbar@5732f5e`, published 2026-09-04) |
+| Validated on | **2026-09-18**; GitHub download step validated **2026-10-01** (#19) |
+| Against | `create-scaffold-hbar@0.4.0` (npm `latest`; source `hedera-dev/create-scaffold-hbar@5732f5e`, published 2026-09-04); GitHub-download run used `latest` resolving to `0.4.1` |
 | Base conventions | `hedera-dev/scaffold-hbar@5eb46ef` (`main`, `templates/blank-template`) |
-| Status | Structure and contract validated locally. **The GitHub download step was not exercised** — see [§8](#8-what-is-not-verified-yet) |
-| **Revalidate** | **Before the final submission (#20), as part of #19.** The CLI changes often (0.1.0 → 0.4.0 in five months) — [§9](#9-revalidation-checklist-for-19) |
+| Status | Structure and contract validated locally **and** via the real GitHub download (repository made public for #19; run #8 in [§7](#7-validation-record)) |
+| **Revalidate** | **Before the final submission (#20).** The CLI changes often (0.1.0 → 0.4.0 in five months) — [§9](#9-revalidation-checklist-for-19) |
 
 **Dependencies.** The layout (`packages/hardhat`, `packages/nextjs`, `packages/sdk`) is the same for every direction under discussion in **#21** (RWA, AI agent, settlement): each needs contracts, a frontend and a shared SDK. Nothing in the structure encodes the settlement policy. Conclusions from **#2** ([dx-benchmark.md](dx-benchmark.md), REQ-04-*) are applied where marked.
 
@@ -196,6 +196,7 @@ Every run used the **published** CLI (`create-scaffold-hbar@0.4.0` via `npx`) in
 | 5 | Root `check`, `build`, dev server (`yarn start` → `GET /` 200 showing testnet/296, unknown route 404) | ✅ |
 | 6 | 2026-10-01 (#25): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export | ✅ `.harness/` copied into the generated project; `yarn harness:validate` there → `passed=true`, 0 findings (static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build`) |
 | 7 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export, main at `6652637` + the credentials/audit/dashboard/issuer-console/testnet-validation work merged since run 6 | ✅ `node scripts/verify-scaffold.mjs`: all 15 structural checks, `yarn setup` fails cleanly without credentials (`MISSING_ENV`, no secret printed), `yarn harness:validate` → `passed=true`, 0 findings. Also found and fixed a real defect: `.claude/` (local AI assistant worktrees) was not gitignored, so `git ls-files -co` included it and the export crashed trying to `cpSync` a nested worktree as a file — fixed by ignoring `.claude/` and `.cursor/` |
+| 8 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (`latest` → 0.4.1), **real GitHub download** against the now-public repository | ✅ `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest`: the literal flow a bounty judge runs (`npx create-scaffold-hbar generated-app --template fmartns/scaffold-hbar-verifiable-settlement ...`) fetched the manifest and template anonymously from GitHub, scaffolded, installed, formatted, committed; all 15 structural checks, `yarn setup` fails cleanly without credentials, `yarn harness:validate` → `passed=true`, 0 findings. §8's "not verified yet" item for the download/manifest-lookup step is now closed |
 | E1 | **Original** `template.json` (initial commit) through the real CLI | ❌ crashes with `ZodError: Required` at `processTemplateManifest`, exit 1 → **IR-1** |
 | E2 | Fixed manifest, but the GitHub manifest lookup returns 404 (repo private/unpushed), `--yes` without `-s` | ❌ the CLI selects Foundry and demands `forge` → **IR-2** |
 | N1 | npm 11.16.0 argv logging | `--template` without `--` is consumed by npm → **DV-3** |
@@ -204,15 +205,7 @@ Known benign output: Yarn 3.2.3 prints `YN0066 typescript … Cannot apply hunk 
 
 ## 8. What is not verified yet
 
-- **The GitHub download step (`giget`) and the manifest lookup (step 3).** The repository is private and nothing is pushed, so the literal flow
-  `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement`
-  could not be run. It requires: everything committed and pushed to the target ref, the repository **public** (also required by the bounty gate, GATE-02), and the manifest reachable anonymously. When that is in place run:
-
-  ```bash
-  node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement
-  ```
-
-  Whether `giget` can fetch a private repository with a token (`GIGET_AUTH`) was not tested; step 3 would still be anonymous and fail.
+- **The GitHub download step (`giget`) and the manifest lookup (step 3)** are now verified — see run #8 in [§7](#7-validation-record). The repository was made public on 2026-10-01 for this; whether `giget` can fetch a **private** repository with a token (`GIGET_AUTH`) remains untested and is not needed now that the repo is public (also required by the bounty gate, GATE-02).
 - Windows and macOS. Only Linux (WSL2) was used.
 - The interactive path (prompts). Only the flag-driven path was run.
 - `npm` as package manager: unsupported by design (IR-11).
@@ -223,7 +216,7 @@ The CLI is updated frequently; this contract is valid for `0.4.0`. Before the fi
 
 1. `npm view create-scaffold-hbar version` and compare with `0.4.0`. If newer, read the diff of `src/types.ts`, `src/tasks/copy-template-files.ts` and `src/utils/template-capabilities.ts` against `5732f5e`.
 2. Update the pinned checks in `scripts/validate-template.mjs` if the schema changed; run it.
-3. Push, make the repository public, then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` on **Node 20.18.3** and on the current Node LTS.
+3. Push (the repository is public since 2026-10-01), then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` on **Node 20.18.3** and on the current Node LTS.
 4. Run the literal `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement` interactively once (prompts must not offer Foundry or npm).
 5. Re-test the form without `--` and update DV-3/D-02 if npm or the CLI changed how the flag is delivered.
 6. Update the date and CLI version at the top of this file and in [bounty-rules.md](bounty-rules.md)'s revalidation log.
