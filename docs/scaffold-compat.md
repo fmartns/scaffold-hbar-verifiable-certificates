@@ -147,7 +147,8 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `build` | `sdk:build` → `hardhat:compile` → `next:build` | Order is sdk → contracts → app; extend, do not reorder |
 | `lint` | eslint on `sdk`, `hardhat`, `nextjs` with `--max-warnings=0` | Warnings fail |
 | `check-types` | `tsc --noEmit` on the three packages; `hardhat:check-types` compiles the contracts first, because the tests import the typechain types that compilation generates | Must pass on a fresh clone, before any `build` or `test` |
-| `test` | `sdk:test` (Vitest) → `hardhat:test` | `test:integration` / `test:e2e` (#13, #15) get their own scripts |
+| `test` | `sdk:test` (Vitest) → `hardhat:test` → `next:test` | `test:integration` (#13) gets its own script |
+| `test:e2e` | `next:test:e2e` → Playwright (`packages/nextjs/e2e`, chromium only): route smoke tests and the public verifier's lifecycle, console API routes mocked at the HTTP boundary — no live Hedera network or credentials | Deliberately **not** part of `test` or `check` (see below); needs `playwright install chromium` once, which `yarn install` does not do automatically |
 | `check` | `lint` → `check-types` → `test` → `harness:doctor` | **The script #14 runs.** Must not need network or secrets |
 | `harness:doctor` | Loads `.harness/spec.yaml` (`hedera-harness doctor --recipe-only`) | Fails on a recipe schema error ([harness.md](harness.md)) |
 | `harness:validate` | Hedera Harness Tier 0–1: static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build` | Clean environments only (refuses a `.env`); run by `scripts/verify-scaffold.mjs` in the generated project |
@@ -159,7 +160,17 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `verify:testnet` | End-to-end credential validation on the real Testnet (#18); asks before paying, `--yes`/`--dry-run`/`--json`; refuses mainnet; writes `docs/evidence/testnet/<runId>.{md,json}` | Never part of `check` or CI: it spends Testnet HBAR and needs the operator |
 | `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` mirror the base scaffold naming | The CLI's outro/prune logic relies on this naming |
 
-Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `test:integration` (#13), `test:e2e` (#15).
+Not implemented on purpose (absent, so calling it fails with "Couldn't find a script"): `test:integration` (#13).
+
+#### CI gating for `test:e2e` (#15)
+
+`yarn test:e2e` is intentionally **not** wired into `yarn check`, and the existing CI workflow (`.github/workflows/ci.yml`) does not run it. Three reasons, read together:
+
+1. **The runner is deliberately cold.** `ci.yml`'s own header says it runs `scripts/self-check.mjs` "on every push and pull request, from a fresh runner: no dependency or build cache". Playwright needs a browser binary (~150–300 MB for Chromium) that `yarn install` does not fetch; a cache-less job would re-download it on every run of every matrix leg (two Node versions today), which is pure cost with no correctness signal `self-check` doesn't already give.
+2. **It changes what the gate is allowed to assume.** Every other step in `self-check` is a static check or runs fully offline (lint, types, Vitest, build). A Playwright run starts a real `next dev` server and a real browser process; that's a different failure class (port binding, browser launch flakiness, dev-server boot time) from what the self-check gate promises ("no network or secrets", per `AGENTS.md`'s `check` contract), and it would make the one gate CI runs slower and less deterministic for every contributor, not just ones touching `packages/nextjs/e2e`.
+3. **Precedent already exists for excluding a real/slow step from `check`.** `verify:testnet` (#18) is explicitly "never part of `check` or CI" because it spends Testnet HBAR; `test:e2e` isn't that expensive, but the same principle — a script that does something `check` promises not to (here: boot a browser and a server) stays out of `check` — applies.
+
+`test:e2e` is run manually (`yarn test:e2e`, after `playwright install chromium` once) and is a candidate for its own CI job later (a separate workflow or job, with the Playwright browser cached by `actions/cache` keyed on the Playwright version, mirroring `test:integration`/`test:e2e`'s "own script" treatment above) — not folded into the existing self-check matrix.
 
 ### 6.3 Deliberate differences from the base scaffold
 
