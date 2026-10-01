@@ -79,10 +79,11 @@ revocation that was never executed.
 | `REVOCATION_NOT_EXECUTED` | info | Revocation published to HCS, but the credential is still issued on-chain |
 | `MIRROR_UNAVAILABLE`, `REGISTRY_UNAVAILABLE` | info | Could not read the source; `evidence` is `unavailable` |
 
-## Credential HCS messages (proposal)
+## Credential HCS messages
 
 The audit decodes messages with `packages/sdk/hedera/hcs/credential-envelope.ts`, the only credential parser. The
-format is a **proposal pending #38 / ADR-002**. The credential module (#41) must publish with it:
+issuance message carries the v1 struct of the credential model in [credential-schema.md](credential-schema.md) (#38).
+The revocation message stays a proposal until ADR-002 (#39). The credential module (#41) must publish with this format:
 
 ```
 issuance   = 0x10 || abi.encode(CredentialEvent)      || signature   // EIP-712, signed by the issuer signer

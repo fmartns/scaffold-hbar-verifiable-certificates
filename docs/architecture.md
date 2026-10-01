@@ -284,6 +284,9 @@ attestationDigest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, has
 
 ### 4.4 Identity rules for the adapter (`externalEventId`) — normative for #8 and #23
 
+> For credentials, these rules are restated as C1–C6 for `externalCredentialId`, with the `credentialHash` and
+> `subjectCommitment` formulas, in [credential-schema.md](credential-schema.md) (#38, ADR-002 data model).
+
 - **R1** `externalEventId` MUST be a deterministic function of the fields that **identify** the event, and of nothing else.
 - **R2** It MUST be stable across retries, restarts and **re-attestations** of the same event.
 - **R3** It MUST NOT include volatile or observational fields (`observedAt`, price at read time, transport ids, HCS sequence).
