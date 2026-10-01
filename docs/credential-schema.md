@@ -196,6 +196,11 @@ interface CredentialDocument {
 `status == Issued`, an equal `credentialHash` and `subjectCommitment`, and `expiresAt == 0 || now < expiresAt`
 (`isCredentialExpired`). The on-chain status is the authority. The document only proves what the credential says.
 
+This JSON document is the whole credential. The template has no visual document (PDF, image) and stores no document:
+a certificate is rendered from the verified document. A fork that needs a file adds a `bytes32 documentHash` claim in
+a new schema version and keeps the file encrypted to the holder
+([ADR-004](architecture.md#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template)).
+
 ## 6. Examples: three credential types, one schema model
 
 These are the test vectors in `packages/sdk/hedera/credentials/test-fixtures.ts`. The subjects are fictitious and the

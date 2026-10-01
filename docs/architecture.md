@@ -3,7 +3,8 @@
 Records: [ADR-001](#adr-001--verifiable-settlement-trust-model-identity-idempotency-and-replay-protection) (settlement
 trust model, identity, idempotency, replay) · [ADR-002](#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model)
 (credentials: privacy, on-chain vs off-chain, data model; supersedes ADR-001 for the credential flow) · [ADR-003](#adr-003--hedera-harness-adopt-the-deterministic-tiers)
-(Hedera Harness).
+(Hedera Harness) · [ADR-004](#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template) (credential
+document: no visual document and no storage in the template).
 
 ## ADR-001 — Verifiable settlement: trust model, identity, idempotency and replay protection
 
@@ -834,7 +835,7 @@ Each scenario states: **Decision** (PROCEED / WAIT / REJECT), **Decided by**, **
 | **#14** self-check | Verify ADR interface constants match code (e.g. `MAX_DATA_LEN`, typehash) |
 | **#17** security review | Threat model [§3.6](#36-threat-model), residual risks [§11](#11-residual-risks-open-questions-and-approval) |
 | **#24** codegen | Emit the error dictionary from custom errors ([§6.5](#65-events-and-errors)); manifest carries topic/token IDs (REQ-24-01/02) |
-| **#26** storage | If a document is needed, its hash goes **inside `data`** (covered by `contentHash`); no ADR change |
+| **#26** storage | If a document is needed, its hash goes **inside `data`** (covered by `contentHash`); no ADR change. *Superseded for credentials by [ADR-004](#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template): no document storage* |
 
 ---
 
@@ -1031,7 +1032,7 @@ permanent (ADR-001 NG-3), so it is limited to identifiers, hashes, commitments, 
 | Holder name, e-mail, CPF, student or employee number, any other identifier (`idType`/`idValue`) | Credential document only | **No** | Personal data. Never in calldata, logs, HCS, Mirror queries, server logs or browser storage |
 | The salt | Credential document only | **No** | Whoever has it can test guesses of the identifier against the public commitment |
 | Claims (course, grade, event, role...), `issuedAt`, `expiresAt` | Credential document only; committed in `credentialHash` | **No** (see CD4) | Content of the credential, disclosed by the holder |
-| The full document | Holder's custody (the console downloads it locally; hosted storage is #26) | **No** | It contains the identifier and the salt together |
+| The full document | Holder's custody (the console downloads it locally; the template hosts no copy, ADR-004) | **No** | It contains the identifier and the salt together |
 
 Consequence for #26: if documents are ever stored by a service, they are encrypted to the holder. A public copy of a
 document defeats the commitment, because it publishes the identifier together with its salt.
@@ -1145,7 +1146,8 @@ this record only states the decision each one depends on.
   them, and they are the normative source for `CredentialRegistry` (#9), the credentials SDK (#41), the issuer console
   (#12), the public verifier (#40) and the audit (#10).
 - #40 must implement CD3 (recompute, pin the registry, show the read time) and CD5 (expiry only with the document).
-- #26 may only store encrypted documents (CD2).
+- #26 may only store encrypted documents (CD2). [ADR-004](#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template)
+  decides that the template stores none.
 - Changing what is public, the commitment scheme or the signed struct requires a new ADR, or an amendment to this one,
   before code.
 
@@ -1191,3 +1193,65 @@ change in a future harness release is caught by `yarn harness:doctor`; the depen
 **Alternatives rejected.** *Not using the harness* — it would only need a note, but loses an executable, agent-facing
 statement of the invariants and the strongly-recommended signal. *Writing our own validator format* — a second
 implementation of what the harness already defines, and not what GATE-20 asks for.
+
+---
+
+## ADR-004 — Credential document: no visual document and no storage in the template
+
+| Field | Value |
+|---|---|
+| Status | **Proposed** — accepted when the pull request that closes #26 is merged |
+| Date | 2026-10-01 |
+| Issue | #26 (depends on ADR-002 and `CredentialRegistry`, #9) |
+| Related | [credential-schema.md §5](credential-schema.md#5-the-credential-document-off-chain) (the document), [issuer-console.md](issuer-console.md) (holder document download), #40 (public verifier), #42 (event attendance demo) |
+
+**Context.** Credentials often come with a visual artifact (a PDF certificate, a diploma image, a badge). Issue #26
+asks whether the template needs one, and storage for it, beyond what HCS and the registry already record. The real use
+case is the event attendance demo (#42). The issuer console issues the credential, shows its `credentialId` as a QR
+code and lets the issuer download the holder document (JSON with identifier, salt, dates and claims). A verifier scans
+the QR code, the public verifier (#40) reads `statusOf(credentialId)`, and with the holder's document it recomputes
+every hash (ADR-002 CD3). The question is whether a stored PDF or image would let that verifier conclude anything more.
+
+**Options evaluated.**
+
+| Option | What it adds to verification | Privacy | Cost and complexity for a template |
+|---|---|---|---|
+| **A. IPFS** (document pinned, CID in the credential) | Nothing the JSON does not already prove | A public CID of a certificate publishes the holder's data permanently, and IPFS has no erasure. CD2 allows only a copy encrypted to the holder, and holders have no keys here: the subject is an e-mail or CPF, not a wallet | Pinning service account and credentials, a new external integration (interface, timeout, fixture), a retention policy, and a key-distribution scheme for the encryption |
+| **B. Plain URL with the document hash as integrity proof** | Detects a swapped file, but the file only repeats signed claims | The host holds PII: access control, retention and erasure requests become the template's problem | A server or bucket per deployment, plus everything in A except pinning |
+| **C. Hash only** (a `bytes32 documentHash` claim, no storage) | Binds one exact rendering of the certificate | The hash of a templated PDF is guessable if its fields are, so it must never be published outside `claimsHash` (CD4) | The issuer must render the final file byte-exactly before signing, and a holder who loses the file, or re-renders it, can no longer match it |
+| **D. Not included** (chosen) | — | No service holds documents, so nothing personal can leak from storage | None |
+
+**Decision (D).** The template ships no visual document, no document hash claim and no document storage. The JSON
+holder document is the credential: it is what `credentialHash` commits to, what `deriveCredential` validates and what
+the holder presents. A certificate a person looks at is a *rendering* of that verified document, produced by the
+verifier (#40) or by the holder's own tooling, never a source of truth. This is a choice, not a gap: the demo asks
+"is this credential issued and not revoked" (QR code alone) and "does it say what the holder claims, about this
+identifier" (QR code plus document). A stored file answers neither better, and every storage option adds PII custody
+or a key-management problem that a template cannot solve for its users.
+
+**What #40 must display.** With only the `credentialId`: status, issuer, registry address, chain, read time and
+HashScan links, plus "content: ask the holder for the credential document". With the document: the claims rendered as
+the certificate view, labelled as rendered from a document checked against the on-chain `credentialHash`. It shows no
+"document file" or "storage" field, and never reports an absent file as missing.
+
+**How a fork adds a visual document.** Nothing in the registry, the signed struct or the HCS envelopes changes:
+
+1. Add a claim to a new schema version, the same way `professional-certification.v1` carries `bytes32 examResultHash`:
+   e.g. `event-attendance.v2(string eventName,uint64 eventDate,string role,bytes32 documentHash)`, with
+   `documentHash = keccak256(<exact final file bytes>)`, computed before signing. `claimsHash` then commits it inside
+   `credentialHash` ([credential-schema.md §4.2](credential-schema.md#42-credentialhash)). Never publish the hash on its own
+   (HCS, logs, a public index): a templated file is low-entropy, so the hash would be a guessing oracle for its contents.
+2. Keep the location (URL or CID) out of the signed content, so moving storage never changes `credentialHash`.
+3. Store the file only encrypted to the holder (ADR-002 CD2), never as public plaintext on IPFS or a public URL, with a
+   retention and erasure policy.
+4. Put the storage client behind one SDK interface with a timeout, validation and a deterministic fixture
+   (`AGENTS.md`). The verifier fetches the file, hashes it and reports "file does not match" as a document finding that
+   never overrides `statusOf`.
+
+**Consequences.** `concepts.md` lists document storage as "Not included (ADR-004)". ADR-002 CD2 stands: any hosted copy
+is encrypted to the holder. The demo (#42) renders its certificate from the JSON document. Adding a document is a schema
+version plus a fork-owned storage adapter, not a change to this template's core.
+
+**Alternatives rejected.** *A (IPFS)* and *B (URL + hash)*: storage and PII custody with no verification gain for the
+use case. *C (hash only)*: couples issuance to a byte-exact rendering and lets the holder lose the ability to verify.
+*Storing the document on HCS or on-chain*: public and permanent (ADR-002, alternatives rejected).
