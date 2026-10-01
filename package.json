@@ -18,12 +18,14 @@
     "lint": "yarn sdk:lint && yarn hardhat:lint && yarn next:lint",
     "check-types": "yarn sdk:check-types && yarn hardhat:check-types && yarn next:check-types",
     "test": "yarn sdk:test && yarn hardhat:test",
-    "check": "yarn lint && yarn check-types && yarn test",
+    "check": "yarn lint && yarn check-types && yarn test && yarn harness:doctor",
     "self-check": "node scripts/self-check.mjs",
     "format": "yarn sdk:format && yarn hardhat:format && yarn next:format",
     "deploy": "yarn hardhat:deploy",
     "codegen": "yarn hardhat:codegen",
     "doctor": "node scripts/doctor.mjs",
+    "harness:doctor": "hedera-harness doctor --recipe-only",
+    "harness:validate": "hedera-harness validate",
     "secrets:scan": "node scripts/secret-scan.mjs",
     "hardhat:check-types": "yarn workspace @sh/hardhat check-types",
     "hardhat:clean": "yarn workspace @sh/hardhat clean",
@@ -58,6 +60,7 @@
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
+    "hedera-harness": "^1.2.2",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10"
   },
