@@ -1,0 +1,38 @@
+{
+  "name": "verifiable-settlement-yarn",
+  "description": "Commands that must pass after any change, one per eligibility requirement so a failure names the requirement. None needs credentials, a .env or network access beyond the package registry.",
+  "requiresNoSecrets": true,
+  "forbiddenCommands": ["npm install", "npm run", "pnpm install", "pnpm run"],
+  "commands": [
+    {
+      "name": "install",
+      "command": "yarn install --immutable",
+      "timeoutMs": 900000,
+      "purpose": "Install every workspace from the committed lockfile, without changing it."
+    },
+    {
+      "name": "lint",
+      "command": "yarn lint",
+      "timeoutMs": 600000,
+      "purpose": "ESLint in every workspace, zero warnings."
+    },
+    {
+      "name": "check-types",
+      "command": "yarn check-types",
+      "timeoutMs": 600000,
+      "purpose": "TypeScript in every workspace."
+    },
+    {
+      "name": "test",
+      "command": "yarn test",
+      "timeoutMs": 900000,
+      "purpose": "SDK unit tests and Hardhat contract tests (deterministic, no Testnet)."
+    },
+    {
+      "name": "build",
+      "command": "yarn build",
+      "timeoutMs": 900000,
+      "purpose": "SDK build, contract compilation and Next.js production build."
+    }
+  ]
+}
