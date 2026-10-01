@@ -83,7 +83,8 @@ revocation that was never executed.
 
 The audit decodes messages with `packages/sdk/hedera/hcs/credential-envelope.ts`, the only credential parser. The
 issuance message carries the v1 struct of the credential model in [credential-schema.md](credential-schema.md) (#38).
-The revocation message stays a proposal until ADR-002 (#39). The credential module (#41) must publish with this format:
+The revocation format is accepted by [ADR-002](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model)
+(CD8). The credential module (#41) must publish with this format:
 
 ```
 issuance   = 0x10 || abi.encode(CredentialEvent)      || signature   // EIP-712, signed by the issuer signer
