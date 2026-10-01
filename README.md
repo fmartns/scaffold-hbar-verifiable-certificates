@@ -130,6 +130,8 @@ Envelope de evidência HCS (schema estável v1) e serviço de publicação: [doc
 
 Contrato de credenciais (emissão, revogação, autorização de emissor): [docs/credential-registry.md](docs/credential-registry.md). Auditoria de credenciais pelo Mirror Node: [docs/credential-audit.md](docs/credential-audit.md). Dashboard de ambiente: [docs/dashboard.md](docs/dashboard.md).
 
+Console do emissor (`/issuer`: emissão e revogação de credenciais com evidência HCS, progresso em tempo real, QR code e auditoria): [docs/issuer-console.md](docs/issuer-console.md).
+
 Benchmark de DX em scaffolds multi-chain e requisitos para #4, #24, #11 e #12: [docs/dx-benchmark.md](docs/dx-benchmark.md).
 
 Os módulos abaixo vêm da direção anterior (liquidação) e ficam como histórico, fora do caminho crítico das credenciais ([#21](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/21)):

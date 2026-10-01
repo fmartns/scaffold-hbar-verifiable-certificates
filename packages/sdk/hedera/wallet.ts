@@ -1,6 +1,7 @@
 /**
- * Browser wallet (EIP-1193) helpers for the selected network. Imports only dependency-free modules so it is safe in a
- * client bundle: import it as `@sh/sdk/hedera/wallet`, not from the package root (which pulls in the Hedera SDK).
+ * Browser wallet (EIP-1193) helpers for the selected network, and the single client entry point of the SDK: import it
+ * as `@sh/sdk/hedera/wallet`, not from the package root (which pulls in the Hedera SDK and Node built-ins). Everything
+ * reachable from here is browser-safe (ethers at most); a test walks the import graph to keep it that way.
  *
  * The chain added to a wallet always uses the PUBLIC relay of `networks.ts`, never `HEDERA_RPC_URL`: an override may
  * carry an API key in its path and must not leave the server.
@@ -10,6 +11,7 @@ import { NETWORKS } from "./networks";
 import type { HederaNetworkName } from "./networks";
 
 export { formatWeibarsAsHbar } from "./hbar";
+export * from "./credentials/client";
 
 /** Public, secret-free description of the network a wallet should be on. Safe to send to the browser. */
 export interface WalletTarget {
