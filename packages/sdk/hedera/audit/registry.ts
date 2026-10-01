@@ -103,7 +103,7 @@ export class RegistryReadError extends Error {
   }
 }
 
-interface RegistryCallOptions {
+export interface RegistryCallOptions {
   network: HederaNetwork;
   registryAddress: string;
   fetch?: typeof fetch;
@@ -119,8 +119,8 @@ const unavailable = (detail: string) => readError(detail);
 const notRegistry = () =>
   readError("malformed answer; is HEDERA_CREDENTIAL_REGISTRY_ADDRESS a CredentialRegistry?", "not_registry");
 
-/** `eth_call` over the relay; returns the raw result. */
-async function callRegistry(options: RegistryCallOptions, data: string): Promise<string> {
+/** `eth_call` over the relay; returns the raw result. Throws {@link RegistryReadError}. */
+export async function callRegistry(options: RegistryCallOptions, data: string): Promise<string> {
   const fetchImpl = options.fetch ?? globalThis.fetch;
   let body: { result?: unknown; error?: unknown };
   try {
