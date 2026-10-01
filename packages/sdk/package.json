@@ -18,10 +18,12 @@
     "hcs:topic": "tsx cli/create-topic.ts",
     "hts:settle": "tsx cli/hts-settle.ts",
     "hts:token": "tsx cli/hts-token.ts",
-    "verify:testnet": "tsx cli/verify-testnet.ts"
+    "verify:testnet": "tsx cli/verify-testnet.ts",
+    "demo:event-attendance": "tsx cli/demo-event-attendance.ts"
   },
   "devDependencies": {
     "@types/node": "^20.19.8",
+    "@types/qrcode": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "~8.27.0",
     "@typescript-eslint/parser": "~8.27.0",
     "@vitest/coverage-v8": "^3.2.4",
@@ -36,6 +38,7 @@
   },
   "dependencies": {
     "@hiero-ledger/sdk": "^2.80.0",
-    "ethers": "^6.14.0"
+    "ethers": "^6.14.0",
+    "qrcode": "^1.5.4"
   }
 }
