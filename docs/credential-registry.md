@@ -8,7 +8,8 @@ settlement policy, value caps or HTS.
 
 > **Status.** How each field of `CredentialEvent` is derived (`issuer`, `schemaId`, `externalCredentialId`,
 > `credentialId`, `subjectCommitment`, `credentialHash`) is specified in [credential-schema.md](credential-schema.md)
-> (#38, the data-model part of ADR-002). The signed struct below is v1 of that model. The type string, domain and tag
+> (#38, the data-model part of [ADR-002](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model),
+> which is the normative source for this contract's roles and privacy boundary). The signed struct below is v1 of that model. The type string, domain and tag
 > are pinned by tests. Changing any of them breaks the signing format and must be mirrored in
 > `packages/sdk/hedera/hcs/credential-envelope.ts`.
 

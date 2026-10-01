@@ -13,8 +13,8 @@ it: a settlement policy, an oracle provider, a console page, an audit view.
 
 ## Existing app (preserve)
 
-Read `AGENTS.md` and `docs/architecture.md` (ADR-001) first; they are
-normative. In particular:
+Read `AGENTS.md` and `docs/architecture.md` (ADR-001, and ADR-002 for
+credentials) first; they are normative. In particular:
 
 - Packages: `packages/hardhat` (contracts, deploy, tests), `packages/nextjs`
   (developer console), `packages/sdk` (Hedera, oracle and Mirror Node adapters,
@@ -32,6 +32,9 @@ normative. In particular:
   published to HCS and its receipt captured before settlement; every HTS
   response code other than `SUCCESS` (22) reverts; no role may settle, mint or
   alter a processed record.
+- Credential privacy (ADR-002): personal data and the subject salt stay
+  off-chain; only identifiers, hashes, salted commitments, status and
+  timestamps are public; every issuance pins `submitter`.
 - Routes: `/` and `/dashboard` keep rendering, and `GET /api/env/status`
   keeps answering, without a `.env`.
 
