@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { INTEGRATION_IDS, addEthereumChainParameter, checkHederaHealth, walletTarget } from "@sh/sdk";
 import type { HederaHealthReport, IntegrationHealth } from "@sh/sdk";
 import { CopyDiagnosticsButton } from "./_components/CopyDiagnosticsButton";
+import { CredentialLookup } from "./_components/CredentialLookup";
 import { IntegrationRow } from "./_components/IntegrationRow";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Badge, StatusBadge } from "./_components/StatusBadge";
@@ -100,6 +101,16 @@ function DeploymentCard({ report }: { report: HederaHealthReport }) {
           <Detail item={registry} name="address" />{" "}
           <StatusBadge status={registry.status} transient={registry.transient} />
         </dd>
+        <dt>Address from</dt>
+        <dd>
+          {registry.details.source === "manifest" ? (
+            "packages/sdk/generated (yarn deploy)"
+          ) : registry.details.source === "env" ? (
+            <code>HEDERA_CREDENTIAL_REGISTRY_ADDRESS</code>
+          ) : (
+            <span className={styles.muted}>—</span>
+          )}
+        </dd>
         <dt>Contract ID</dt>
         <dd>
           <Detail item={registry} name="contractId" />
@@ -137,6 +148,12 @@ function DeploymentCard({ report }: { report: HederaHealthReport }) {
       </dl>
     </section>
   );
+}
+
+/** The address configured on the server, if any; otherwise the client hook resolves the generated manifest itself. */
+function registryOverride(registry: IntegrationHealth): string | null {
+  const { address, source } = registry.details;
+  return source === "env" && typeof address === "string" ? address : null;
 }
 
 function EnvironmentIssues({ report }: { report: HederaHealthReport }) {
@@ -191,6 +208,9 @@ export default async function DashboardPage() {
         <OperatorCard report={report} />
         <WalletPanel target={target} addChain={addChain} />
         <DeploymentCard report={report} />
+        {report.network && (
+          <CredentialLookup network={report.network.name} address={registryOverride(report.integrations.registry)} />
+        )}
       </div>
 
       <section className={styles.section} aria-labelledby="integrations-title">

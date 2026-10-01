@@ -1,6 +1,7 @@
 import { AbiCoder, Interface } from "ethers";
 import { describe, expect, it } from "vitest";
 import { CREDENTIAL_REGISTRY_ABI } from "./audit/registry";
+import type { GeneratedDeployments } from "./contracts";
 import type { KeyInspector } from "./environment";
 import { INTEGRATION_IDS, checkHederaHealth, lookupEvmAccount } from "./health";
 import type { HederaHealthReport } from "./health";
@@ -40,6 +41,8 @@ interface FakeOptions {
   /** Hosts that answer like the testnet ones (endpoint overrides). */
   mirrorHost?: string;
   relayHost?: string;
+  /** Generated deployment manifest; empty by default so tests do not depend on the committed one. */
+  manifest?: GeneratedDeployments;
 }
 
 /** In-memory Mirror Node and relay for the selected testnet. Records every request as `METHOD host/path`. */
@@ -116,7 +119,12 @@ const fullEnv = {
 
 async function check(env: Record<string, string | undefined>, options: FakeOptions = {}) {
   const net = fakeNetwork(options);
-  const report = await checkHederaHealth(env, { fetch: net.fetch, inspectKey: inspectMatching, now });
+  const report = await checkHederaHealth(env, {
+    fetch: net.fetch,
+    inspectKey: inspectMatching,
+    now,
+    manifest: options.manifest ?? {},
+  });
   return { report, calls: net.calls };
 }
 
@@ -151,6 +159,7 @@ describe("checkHederaHealth — fully configured environment", () => {
     ]);
     expect(report.integrations.registry.details).toEqual({
       address: REGISTRY,
+      source: "env",
       contractId: "0.0.7777",
       hcsTopic: TOPIC,
       paused: false,
@@ -179,6 +188,19 @@ describe("checkHederaHealth — fully configured environment", () => {
     expect(report.integrations.registry.details).not.toHaveProperty("contractId");
   });
 
+  it("uses the address recorded by `yarn deploy` when HEDERA_CREDENTIAL_REGISTRY_ADDRESS is unset", async () => {
+    const record = { address: REGISTRY, contractId: "0.0.7777", deployTxHash: null, blockNumber: 1, abiHash: REGISTRY };
+    const manifest = { testnet: { CredentialRegistry: record } } as GeneratedDeployments;
+    const { report } = await check({ ...fullEnv, HEDERA_CREDENTIAL_REGISTRY_ADDRESS: undefined }, { manifest });
+    expect(report.integrations.registry.status).toBe("ok");
+    expect(report.integrations.registry.details).toMatchObject({ address: REGISTRY, source: "manifest" });
+
+    // An explicit variable always wins over the manifest.
+    const other = "0x" + "9".repeat(40);
+    const explicit = await check({ ...fullEnv, HEDERA_CREDENTIAL_REGISTRY_ADDRESS: other }, { manifest });
+    expect(explicit.report.integrations.registry.details).toMatchObject({ address: other, source: "env" });
+  });
+
   it("produces plain JSON (no bigint), safe to send to a browser", async () => {
     const { report } = await check(fullEnv);
     expect(JSON.parse(JSON.stringify(report))).toEqual(report);
@@ -199,6 +221,7 @@ describe("checkHederaHealth — not configured", () => {
     expect(report.overall).toBe("not_configured");
     expect(report.integrations.hcs.remediation).toMatch(/yarn hcs:topic/);
     expect(report.integrations.registry.variable).toBe("HEDERA_CREDENTIAL_REGISTRY_ADDRESS");
+    expect(report.integrations.registry.remediation).toMatch(/yarn deploy --network hederaTestnet/);
     expect(report.integrations.environment.variable).toBe("HEDERA_OPERATOR_ID");
     expect(calls.some(c => c.includes("/topics/") || c.includes("/contracts/") || c.includes("/accounts/"))).toBe(
       false,

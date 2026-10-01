@@ -14,6 +14,8 @@ import { DEFAULT_INDEX_BUDGET_SECONDS } from "./audit/audit";
 import { CREDENTIAL_AUDIT_ENV } from "./audit/config";
 import { RegistryReadError, readRegistryDeployment } from "./audit/registry";
 import type { RegistryDeployment } from "./audit/registry";
+import { deployCommand, findDeployment, lookupContractId, missingDeploymentMessage } from "./contracts";
+import type { GeneratedDeployments } from "./contracts";
 import {
   ENV,
   FAUCET_URL,
@@ -95,6 +97,8 @@ export interface HealthCheckOptions {
   inspectKey?: KeyInspector;
   /** Mirror Node lag above which a warning is raised. Default: the audit's index budget. */
   indexBudgetSeconds?: number;
+  /** Deployment manifest used when `HEDERA_CREDENTIAL_REGISTRY_ADDRESS` is unset. Default: `packages/sdk/generated`. */
+  manifest?: GeneratedDeployments;
 }
 
 export const DEFAULT_HEALTH_TIMEOUT_MS = 5_000;
@@ -332,41 +336,24 @@ async function hcsHealth(
 // CredentialRegistry (#9)
 // ---------------------------------------------------------------------------------------------------------------------
 
-async function lookupContractId(
-  network: HederaNetwork,
-  address: string,
-  fetchImpl: typeof fetch,
-  timeoutMs: number,
-): Promise<string | null> {
-  try {
-    const response = await fetchImpl(`${network.mirrorNodeUrl}/api/v1/contracts/${address}`, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!response.ok) return null;
-    const body = (await response.json()) as { contract_id?: unknown };
-    return typeof body.contract_id === "string" && /^\d+\.\d+\.\d+$/.test(body.contract_id) ? body.contract_id : null;
-  } catch {
-    return null;
-  }
-}
-
 async function registryHealth(
   env: EnvironmentVariables,
   network: HederaNetwork,
-  options: { fetch: typeof fetch; timeoutMs: number },
+  options: { fetch: typeof fetch; timeoutMs: number; manifest?: GeneratedDeployments },
 ): Promise<IntegrationHealth> {
   const variable = CREDENTIAL_AUDIT_ENV.REGISTRY_ADDRESS;
   const raw = env[variable]?.trim() ?? "";
-  if (!raw) {
-    return integration("registry", "not_configured", `${variable} is not set.`, {
-      remediation: `Deploy CredentialRegistry (packages/hardhat/deploy/00_deploy_credential_registry.ts) and set ${variable} to its EVM address.`,
+  // An explicit variable wins; otherwise the address the last `yarn deploy` recorded in packages/sdk/generated.
+  const recorded = raw ? null : findDeployment("CredentialRegistry", network.name, options.manifest);
+  if (!raw && !recorded) {
+    return integration("registry", "not_configured", `CredentialRegistry is not deployed on ${network.name}.`, {
+      remediation: `${missingDeploymentMessage("CredentialRegistry", network.name)} Or set ${variable} to an existing deployment.`,
       variable,
     });
   }
   let address: string;
   try {
-    address = getAddress(raw).toLowerCase();
+    address = getAddress(recorded?.address ?? raw).toLowerCase();
     if (/^0x0{40}$/.test(address)) throw new Error("zero");
   } catch {
     return integration("registry", "error", `${variable} is not a valid, non-zero EVM address.`, {
@@ -374,8 +361,9 @@ async function registryHealth(
       variable,
     });
   }
+  const source = recorded ? "manifest" : "env";
 
-  const [read, contractId] = await Promise.all([
+  const [read, lookedUpId] = await Promise.all([
     readRegistryDeployment({
       network,
       registryAddress: address,
@@ -385,10 +373,11 @@ async function registryHealth(
       (deployment): { deployment: RegistryDeployment } | { error: unknown } => ({ deployment }),
       (error: unknown) => ({ error }),
     ),
-    lookupContractId(network, address, options.fetch, options.timeoutMs),
+    lookupContractId(network, address, { fetch: options.fetch, timeoutMs: options.timeoutMs }),
   ]);
+  const contractId = lookedUpId ?? recorded?.contractId ?? null;
   const links = link("Contract on HashScan", hashscanContractUrl(network, contractId ?? address));
-  const base = { address, ...(contractId && { contractId }) };
+  const base = { address, source, ...(contractId && { contractId }) };
 
   if ("error" in read) {
     const notRegistry = read.error instanceof RegistryReadError && read.error.reason === "not_registry";
@@ -400,7 +389,9 @@ async function registryHealth(
         : `Could not read CredentialRegistry at ${address}: the relay at ${redactUrl(network.rpcUrl)} did not answer.`,
       {
         remediation: notRegistry
-          ? `Check ${variable} and ${ENV.NETWORK}: contract addresses are per network and per deployment.`
+          ? recorded
+            ? `The address recorded in packages/sdk/generated does not answer on ${network.name} (was the network reset?). Redeploy with \`${deployCommand(network.name)}\`, or set ${variable}.`
+            : `Check ${variable} and ${ENV.NETWORK}: contract addresses are per network and per deployment.`
           : `Check your connection or ${ENV.RPC_URL}, then retry.`,
         variable: notRegistry ? variable : ENV.RPC_URL,
         transient: !notRegistry,
@@ -525,7 +516,7 @@ export async function checkHederaHealth(
       ),
       relayHealth(network, fetchImpl, timeoutMs),
       hcsHealth(env, network, { fetch: fetchImpl, timeoutMs, inspectKey }),
-      registryHealth(env, network, { fetch: fetchImpl, timeoutMs }),
+      registryHealth(env, network, { fetch: fetchImpl, timeoutMs, manifest: options.manifest }),
     ]);
     checks = { mirror, relay, hcs, registry };
   } else {

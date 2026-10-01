@@ -7,6 +7,8 @@
  */
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { describeDeployments } from "../hedera/contracts";
+import type { GeneratedDeployments } from "../hedera/contracts";
 import { validateHederaEnvironment } from "../hedera/environment";
 import type { EnvironmentVariables, ValidateEnvironmentOptions } from "../hedera/environment";
 import { formatEnvironmentReport } from "../hedera/environment-report";
@@ -27,9 +29,10 @@ export interface SetupResult {
 export async function runSetup(
   argv: string[],
   env: EnvironmentVariables,
-  options: ValidateEnvironmentOptions = {},
+  options: ValidateEnvironmentOptions & { manifest?: GeneratedDeployments } = {},
 ): Promise<SetupResult> {
-  const validation = await validateHederaEnvironment(env, options);
+  const { manifest, ...validateOptions } = options;
+  const validation = await validateHederaEnvironment(env, validateOptions);
 
   if (argv.includes("--json")) {
     const exitCode = validation.ok ? EXIT.OK : validation.status === "unverified" ? EXIT.UNVERIFIED : EXIT.INVALID;
@@ -45,6 +48,11 @@ export async function runSetup(
 
   // Steps that depend on Hedera (deployment, HCS topic, HTS token) are added by later tasks and run from here.
   lines.push("", "Environment validated. Steps that depend on Hedera run after this check.");
+  lines.push(
+    "",
+    `Contracts on ${validation.network} (packages/sdk/generated, written by \`yarn deploy\`):`,
+    ...describeDeployments(validation.network, manifest).map(line => `  ${line}`),
+  );
   return { exitCode: EXIT.OK, lines };
 }
 
