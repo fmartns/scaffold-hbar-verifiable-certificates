@@ -1,6 +1,6 @@
 {
   "name": "verifiable-settlement",
-  "description": "Verifiable event-driven settlement on Hedera: oracle attestation, HCS evidence, a Solidity SettlementRouter, HTS credit and Mirror Node audit. Next.js + Hardhat + a shared TypeScript SDK.",
+  "description": "Verifiable credentials on Hedera: issuers sign certificates, HCS records the evidence, a Solidity CredentialRegistry decides status and anyone audits it through the Mirror Node. Next.js + Hardhat + a shared TypeScript SDK.",
   "create-scaffold-hbar": {
     "capabilities": {
       "frontend": [
@@ -45,7 +45,7 @@
       },
       {
         "key": "HEDERA_HCS_TOPIC_ID",
-        "description": "ID (0.0.x) of the HCS topic that receives the settlement evidence. Create it on the selected network with a submitKey equal to the operator key. Required by the HCS publisher."
+        "description": "ID (0.0.x) of the HCS topic that receives the credential evidence (yarn hcs:topic creates it with a submitKey equal to the operator key). Required by the issuer console, the HCS publisher and the CredentialRegistry deploy."
       },
       {
         "key": "HEDERA_SETTLEMENT_ROUTER_ADDRESS",
@@ -81,7 +81,7 @@
       },
       {
         "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
-        "description": "Encrypted deployer key written by the account script. Do not fill it manually."
+        "description": "Reserved for an encrypted deployer keystore; no code in this template reads it yet (yarn deploy takes the key from __RUNTIME_DEPLOYER_PRIVATE_KEY in the shell). Do not fill it manually."
       },
       {
         "key": "ORACLE_BASE_URL",
