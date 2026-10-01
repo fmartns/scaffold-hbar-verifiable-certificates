@@ -4,7 +4,8 @@
  * it through `@sh/sdk/hedera/wallet`.
  */
 export * from "./fields";
-export type { CredentialDocument } from "./schema";
+export type { CredentialDocument, CredentialModel } from "./schema";
+export { deriveCredential } from "./schema";
 export * from "./signing";
 export * from "./registry-calls";
 export * from "./errors";
