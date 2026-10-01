@@ -33,6 +33,10 @@ gitleaks-report*.json
 .vscode
 .idea
 
+# local AI coding assistant state (worktrees, scratch files)
+.claude/
+.cursor/
+
 # hedera-harness: run artifacts, vendored skills and caches (the recipe in .harness/ is versioned)
 .harness/runs/
 .harness/runtime/
