@@ -44,7 +44,7 @@ HCS is evidence, not validity: the audit report explains `statusOf` and never ov
 | Piece | Status | Where |
 |---|---|---|
 | `CredentialRegistry`: issuer registry, `issue`, `revoke`, signer rotation, pause, deploy script and tests | Implemented | [credential-registry.md](credential-registry.md) |
-| Credential HCS messages: encode, decode, EIP-712 digests, `credentialId` | Implemented; format is a proposal pending ADR-002 ([#38](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/38), [#39](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/39)) | `packages/sdk/hedera/hcs/credential-envelope.ts` |
+| Credential HCS messages: encode, decode, EIP-712 digests, `credentialId` | Implemented; format accepted by [ADR-002](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model) and [credential-schema.md](credential-schema.md) | `packages/sdk/hedera/hcs/credential-envelope.ts` |
 | HCS evidence topic creation (`yarn hcs:topic`) | Implemented | [hcs-envelope.md](hcs-envelope.md) |
 | HCS publisher (consensus receipt, transaction ID, HashScan URL) | Implemented for the settlement envelope; publishing credential messages is part of #41 | [hcs-envelope.md](hcs-envelope.md) |
 | Mirror Node credential audit (`auditCredential`, `auditHcsMessage`) | Implemented | [credential-audit.md](credential-audit.md) |

@@ -64,6 +64,7 @@
         "HCS is evidence, not validity",
         "validateHederaEnvironment",
         "packages/sdk/hedera/hts",
+        "ADR-002",
         "yarn check",
         "yarn harness:validate"
       ]

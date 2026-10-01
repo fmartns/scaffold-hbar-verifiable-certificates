@@ -122,6 +122,8 @@ Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yar
 
 Consulte [docs/concepts.md](docs/concepts.md) (narrativa, termos e status de implementação), [docs/architecture.md](docs/architecture.md) e [AGENTS.md](AGENTS.md).
 
+Privacidade e modelo de dados das credenciais (papéis, o que fica on-chain e off-chain, commitment do titular, trade-offs): [ADR-002](docs/architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model), com as fórmulas normativas em [docs/credential-schema.md](docs/credential-schema.md). É a fonte normativa do `CredentialRegistry`.
+
 Regras oficiais do bounty, gate de elegibilidade, rubrica e checklist de submissão: [docs/bounty-rules.md](docs/bounty-rules.md).
 
 Hedera Harness: **adotado** nos tiers determinísticos (0–1). O harness spec e os validators estão em [`.harness/`](.harness/) e vão junto com cada projeto gerado; para estender o template com um agente, edite `.harness/prd.md` e rode `npx hedera-harness run`. Decisão, o que cada validator protege e por que os tiers 2, 3 e 3.5 não estão habilitados: [docs/harness.md](docs/harness.md).

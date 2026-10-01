@@ -1,8 +1,8 @@
 # Architecture Decision Record
 
 Records: [ADR-001](#adr-001--verifiable-settlement-trust-model-identity-idempotency-and-replay-protection) (settlement
-trust model, identity, idempotency, replay) · ADR-002 (reserved for #39: privacy, on-chain vs off-chain, credential
-data model) · [ADR-003](#adr-003--hedera-harness-adopt-the-deterministic-tiers)
+trust model, identity, idempotency, replay) · [ADR-002](#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model)
+(credentials: privacy, on-chain vs off-chain, data model; supersedes ADR-001 for the credential flow) · [ADR-003](#adr-003--hedera-harness-adopt-the-deterministic-tiers)
 (Hedera Harness).
 
 ## ADR-001 — Verifiable settlement: trust model, identity, idempotency and replay protection
@@ -290,7 +290,7 @@ attestationDigest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, has
 ### 4.4 Identity rules for the adapter (`externalEventId`) — normative for #8 and #23
 
 > For credentials, these rules are restated as C1–C6 for `externalCredentialId`, with the `credentialHash` and
-> `subjectCommitment` formulas, in [credential-schema.md](credential-schema.md) (#38, ADR-002 data model).
+> `subjectCommitment` formulas, in [credential-schema.md](credential-schema.md) (#38, the data-model part of [ADR-002](#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model)).
 
 - **R1** `externalEventId` MUST be a deterministic function of the fields that **identify** the event, and of nothing else.
 - **R2** It MUST be stable across retries, restarts and **re-attestations** of the same event.
@@ -980,6 +980,179 @@ Adopt conventions from Scaffold HBAR's Next.js + Hardhat monorepo and generated 
 | **`HcsRef`** | The publisher's *claim* of where the attestation sits in HCS; not verifiable on-chain. |
 | **Commit-before-execute** | The attestation is in HCS (consensus-timestamped) before it is settled. |
 | **Finding** | A result of the Mirror-based audit ([§6.8](#68-mirror-node-audit-contract-10)). |
+
+---
+
+## ADR-002 — Credentials: privacy, on-chain vs off-chain and data model
+
+| Field | Value |
+|---|---|
+| Status | **Proposed** — accepted when the pull request that closes #39 is merged |
+| Date | 2026-10-01 |
+| Issue | #39 (depends on #21, the direction decision, and #38, the data model) |
+| Supersedes | ADR-001 for the credential flow. ADR-001 stays normative for the settlement flow (previous direction) and for the mechanisms the credential flow reuses: EIP-712 authenticity, a permanent idempotency key, authenticity before uniqueness, freshness (D7), publish before release (D11), non-issuing admin (D12) |
+| Normative parts | Data model and every formula: [credential-schema.md](credential-schema.md) (#38). Roles, privacy boundary, trade-offs and trust decisions: this record |
+| Related | [credential-registry.md](credential-registry.md), [credential-audit.md](credential-audit.md), [issuer-console.md](issuer-console.md), [security.md](security.md) (threat model T-1 to T-10, findings F-1/F-2) |
+
+**Context.** Issue #21 moved the template from B2B settlement to verifiable credentials: an issuer signs a credential,
+anyone verifies it publicly, and the issuer can revoke it. Credentials name people, so the questions ADR-001 never had
+to answer become the core ones: what may be public forever, how a holder proves a credential is theirs without
+publishing who they are, and what a verifier can conclude from the chain alone. This record answers them with the
+same discipline as ADR-001 (roles, boundaries, explicit trade-offs) at a size proportional to a template. It does not
+restate formulas: `credentialId`, `credentialHash` and `subjectCommitment` are defined only in
+[credential-schema.md](credential-schema.md) and implemented only in `packages/sdk/hedera/credentials/schema.ts`.
+
+### Decisions
+
+**CD1 — Four roles, and the admin never issues or alters a record.**
+
+| Role | Holds | Can | Cannot |
+|---|---|---|---|
+| **Issuer** (a registered namespace) | The namespace's signer key; the credential documents it issued | Sign issuances (EIP-712), revoke its own credentials while active, rotate its own signer | Change a recorded credential (hash, subject, issuer, signer); re-issue a revoked `credentialId`; act under another namespace |
+| **Holder** (the person named by the credential) | The credential document, including the salt | Present the document to whom they choose; prove the credential is theirs by revealing the identifier behind `subjectCommitment` | Revoke, edit or re-issue; prevent the issuer's or the admin's revocation |
+| **Verifier** (anyone) | Nothing beyond what the holder shows | Read `statusOf(credentialId)`, recompute every hash from the document, audit the HCS evidence | Learn who the holder is from public data; treat `HcsRef` or Mirror data as on-chain validity |
+| **Admin** (`ADMIN_ROLE`, multisig recommended) | The admin key | Register namespaces, activate/deactivate them, set their maximum signature window, pause issuance, revoke any credential (flagged `byAdmin = true`) | Issue; rotate an issuer's signer; re-register a namespace; change any field of an existing record |
+
+Admin revocation is the one deliberate exception to "only the issuer decides": it exists to contain a compromised or
+abandoned namespace (security.md T-1), it is final and public, and verifiers can show `byAdmin`. Everything else in D12
+carries over: no role can create a credential or rewrite one. A test pins the full list of state-changing functions
+([credential-registry.md](credential-registry.md#access-control)).
+
+**CD2 — Personal data is strictly off-chain.** Everything written to the contract, its logs or HCS is public and
+permanent (ADR-001 NG-3), so it is limited to identifiers, hashes, commitments, status and timestamps.
+
+| Data | Where | Public? | Why it may be public |
+|---|---|---|---|
+| `credentialId`, `issuer` (hash of the namespace name) | Registry key and record, logs, HCS | Yes | Identity of the credential and of the issuing organization, never of the person |
+| `externalCredentialId`, `schemaId` | HCS issuance message, `CredentialIssued` log (`schemaId`) | Yes | Built from the schema and the issuer's `reference`, which must not contain personal data (rule C6) |
+| `credentialHash` | Record, log, HCS | Yes | A commitment to the content; it reveals nothing the document does not already show its holder |
+| `subjectCommitment` | Record, indexed log topic, HCS | Yes | Salted with a unique per-credential random salt, so it cannot be inverted or linked across credentials |
+| `status`, registration time, `revokedAt`, `revokedBy`, `byAdmin`, signer, `signedAt`/`validUntil`/`submitter`, `HcsRef` | Record, logs, HCS | Yes | Lifecycle and audit facts about the credential, not the person |
+| Holder name, e-mail, CPF, student or employee number, any other identifier (`idType`/`idValue`) | Credential document only | **No** | Personal data. Never in calldata, logs, HCS, Mirror queries, server logs or browser storage |
+| The salt | Credential document only | **No** | Whoever has it can test guesses of the identifier against the public commitment |
+| Claims (course, grade, event, role...), `issuedAt`, `expiresAt` | Credential document only; committed in `credentialHash` | **No** (see CD4) | Content of the credential, disclosed by the holder |
+| The full document | Holder's custody (the console downloads it locally; hosted storage is #26) | **No** | It contains the identifier and the salt together |
+
+Consequence for #26: if documents are ever stored by a service, they are encrypted to the holder. A public copy of a
+document defeats the commitment, because it publishes the identifier together with its salt.
+
+**CD3 — The holder is bound by a salted commitment; integrity is checked by recomputation.** The issuer commits the
+holder's normalized identifier with a fresh random salt into `subjectCommitment`
+([credential-schema.md §4.1](credential-schema.md#41-subjectcommitment)) and includes that commitment, the identity
+fields, the dates and the claims in `credentialHash` ([§4.2](credential-schema.md#42-credentialhash)). The issuer signs
+both, and the registry records them once. The salt is per credential because a CPF or e-mail has too little entropy:
+without it, anyone could hash every candidate and find the holder, and two credentials of one holder would share a
+commitment. To verify, the holder hands over the document, and the verifier:
+
+1. Derives the model with `deriveCredential(document)`. Every identifier is recomputed, never read from the document.
+2. Reads `statusOf(credentialId)` on the pinned registry address and chain (not just the id, see security.md T-2) and
+   requires `Issued` with an equal `credentialHash` and `subjectCommitment`.
+3. Checks expiry from the document (`expiresAt == 0 || now < expiresAt`, see CD5).
+4. Binds the identifier to the person in front of them out of band (e.g. the holder proves control of the e-mail, or
+   shows an ID with that CPF). The chain proves that *this identifier* holds the credential; possessing a document is
+   not, by itself, being its holder.
+
+The procedure is specified once in [credential-schema.md §5](credential-schema.md#5-the-credential-document-off-chain);
+the public verifier (#40) and the audit consume that implementation. The on-chain status is the authority: a perfect
+document of a revoked credential is revoked.
+
+**CD4 — Claims are integrity-protected, not hidden.** `credentialHash` has no secret input of its own: apart from the
+claims and dates, every input is public. Someone who already suspects the content (a known event name, a grade from a
+small set) can test guesses against it. This is accepted: the template protects *who* holds a credential, and the
+content of typical certificates (event attended, course passed) is low-sensitivity once unlinked from the person.
+A schema whose claims must stay confidential adds a high-entropy claim (e.g. `bytes32 contentNonce`) to its descriptor.
+The schema model already supports it; no format change is needed.
+
+**CD5 — Expiry stays inside `credentialHash`; no v2 struct now.** This closes the open point of
+[credential-schema.md §7](credential-schema.md#7-open-points). `issuedAt` and `expiresAt` are facts stated by the
+credential and are signed with it, while `signedAt`/`validUntil` only bound one signature (ADR-001 D7). Consequences:
+
+- A verifier holding only a `credentialId` learns `issued` or `revoked`, never the expiry date. #40 shows "expiry: check
+  with the holder's document" in that case, and shows "expired" only when it has the document.
+- The on-chain `issuedAt` is the registration block time, not the date printed on the credential. UIs label it as
+  such.
+- An issuer that needs an expired credential to stop reading `issued` revokes it. Revocation is final, which matches
+  an expired credential that cannot be renewed in place (renewing is a new `reference`, rule C2).
+
+*Rejected for now:* adding `expiresAt` to a v2 `CredentialEvent` and to the record. It changes the EIP-712 type string,
+the HCS envelope, the registry storage and every signer, so it would break all v1 signatures and tooling a few days
+before #40 and the demo (#42). If a future use case needs status-only expiry, it ships as `version = 2` with a new
+type string, accepted alongside v1, and a new message kind in `hcs/credential-envelope.ts`. It is never a silent change
+of v1.
+
+**CD6 — `HcsRef` front-running is closed by the submitter pin (security.md F-1).** The issuer publishes the signed
+event to HCS before `issue` (D11), and `HcsRef` is not covered by the signature. With `submitter = address(0)`, anyone
+reading the topic could submit the signature first with a forged `HcsRef`. The credential would still be recorded
+correctly, but its evidence would read `inconsistent` forever.
+
+- *Decision:* the issuer always pins `submitter` to the account that will send `issue`. The issuer console (#12)
+  enforces it: the signed event's `submitter` is the connected issuer wallet, never `address(0)`, and any other caller
+  reverts with `SubmitterMismatch` (tested against the compiled contract, including the front-run attempt). The SDK's
+  issuance builder (`buildCredentialDraft`) refuses a missing or zero submitter. Signing with `address(0)` in production is prohibited
+  (security.md §8).
+- *Residual risk:* (1) events signed with `address(0)` by third-party tooling remain exposed to evidence griefing;
+  (2) the pinned submitter itself can attach a wrong `HcsRef`, which is the issuer misreporting its own evidence and is
+  caught by the audit; (3) a pin means only that account can submit, so losing it requires re-signing (security.md T-8).
+  In every case `statusOf` is unaffected, and the audit reports evidence findings without overriding it.
+- *Future work:* on `HCS_REF_MISMATCH`, the audit could search the topic for the issuance by digest and report
+  "evidence exists, `HcsRef` forged by the relayer". This is not needed while the pin is enforced.
+
+**CD7 — No namespace re-keying or revocation delay in the template (security.md F-2).** A stolen issuer key can rotate
+the signer and revoke that namespace's credentials before the admin deactivates it. A timelocked rotation, a
+governance-gated re-key or a revocation delay would each add a second time-dependent state machine to the registry and
+slow legitimate revocation, the action a verifier most needs to be fast. The template keeps the runbook instead: the admin
+deactivates the namespace, which freezes issuance, issuer revocation and rotation at once, revokes the forged
+credentials and registers a new namespace (security.md §7). A deployment with high-value credentials should add a
+timelocked rotation. This is recorded as future work.
+
+**CD8 — The revocation message format is accepted as specified.** `0x11 || abi.encode(CredentialRevocation) ||
+signature` ([credential-audit.md](credential-audit.md#credential-hcs-messages)) is no longer a proposal. It carries no
+personal data, and its signature is evidence only: `revoke` is authorized by `msg.sender`, and the audit compares the
+signer with the on-chain `revokedBy`.
+
+**CD9 — No DID, W3C Verifiable Credentials or cryptographic selective disclosure (BBS+). This is a conscious choice.**
+
+- *Why not now.* Each one adds a dependency the template cannot keep simple or deterministic. DID resolution is a
+  second identity system next to issuer namespaces. A W3C VC data model with JSON-LD canonicalization contradicts the
+  "never hash JSON" rule. BBS+ needs pairing-friendly curves that the EVM cannot verify cheaply, and its libraries have
+  no Hedera-native path. The template's goal is a pattern a developer understands without help: an issuer registry,
+  one signed struct, one commitment, public status and HCS evidence.
+- *What is given up.* Disclosure is all-or-nothing per document: the holder shows every claim and the identifier to a
+  verifier. A verifier can link the presentations it sees. Credentials are not portable to VC wallets.
+- *How to get there later.* Nothing on-chain blocks it. `idType = did` already lets a subject be a DID. A VC can embed
+  `credentialId` as its status reference, with the registry acting as a revocation registry. Selective disclosure can
+  replace `claimsHash` with a Merkle root of salted claims under a new schema version, or a BBS+ proof checked off-chain
+  against the issuer's signature. These are future work, not omissions.
+
+### Threat model (summary)
+
+Detailed rows, mitigations and residuals are in [security.md §3](security.md#3-threat-model-credential-issue-and-revoke);
+this record only states the decision each one depends on.
+
+| Threat | Outcome under this design | Decision |
+|---|---|---|
+| Issuer key compromised | Forged issuances and revocations until the admin deactivates the namespace; forged issuances lack matching HCS evidence; no re-key | CD7, security.md T-1 |
+| Re-issuing a credential | Impossible: `credentialId` is permanent, same content reverts `AlreadyIssued`, different content `ConflictingCredential`, a revoked id never returns | CD1, T-2 |
+| Admin forging or altering | Cannot issue or change a record; can revoke (flagged `byAdmin`) or register a new namespace it controls (off-chain trust in the namespace name) | CD1, T-3 |
+| Fake verifier off-chain | Out of contract scope; the verifier shows registry address, chain and HashScan links so anyone can check `statusOf` | CD3, T-6 |
+| Mirror Node lagging at verification time | Absent data is `pending`, never "missing"; the relay can trail consensus by seconds, so the verifier shows the read time and never caches "valid" | CD3, T-4 |
+| Holder de-anonymized from public data | Requires the salt, which only the document carries | CD2, CD3, T-9 |
+| Forged `HcsRef` by front-running | Blocked by the submitter pin | CD6, T-5 |
+
+### Consequences
+
+- `credential-schema.md` (data model) and this record together form ADR-002. `AGENTS.md` and the README point to
+  them, and they are the normative source for `CredentialRegistry` (#9), the credentials SDK (#41), the issuer console
+  (#12), the public verifier (#40) and the audit (#10).
+- #40 must implement CD3 (recompute, pin the registry, show the read time) and CD5 (expiry only with the document).
+- #26 may only store encrypted documents (CD2).
+- Changing what is public, the commitment scheme or the signed struct requires a new ADR, or an amendment to this one,
+  before code.
+
+**Alternatives rejected.** *Storing a hash of the identifier without a salt* is dictionary-attackable and links every
+credential of a holder. *Storing claims or the document on HCS* would be public and permanent. *Encrypting PII
+on-chain* would also be permanent: a key leaked later exposes everything, and erasure becomes impossible.
+*A v2 struct with `expiresAt` now* (CD5). *Full W3C VC/DID/BBS+* (CD9).
 
 ---
 
