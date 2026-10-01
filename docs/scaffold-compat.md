@@ -146,9 +146,11 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `serve` | `next start` (needs `build`) | Production server |
 | `build` | `sdk:build` → `hardhat:compile` → `next:build` | Order is sdk → contracts → app; extend, do not reorder |
 | `lint` | eslint on `sdk`, `hardhat`, `nextjs` with `--max-warnings=0` | Warnings fail |
-| `check-types` | `tsc --noEmit` on the three packages | — |
+| `check-types` | `tsc --noEmit` on the three packages; `hardhat:check-types` compiles the contracts first, because the tests import the typechain types that compilation generates | Must pass on a fresh clone, before any `build` or `test` |
 | `test` | `sdk:test` (Vitest) → `hardhat:test` | `test:integration` / `test:e2e` (#13, #15) get their own scripts |
-| `check` | `lint` → `check-types` → `test` | **The script #14 runs.** Must not need network or secrets |
+| `check` | `lint` → `check-types` → `test` → `harness:doctor` | **The script #14 runs.** Must not need network or secrets |
+| `harness:doctor` | Loads `.harness/spec.yaml` (`hedera-harness doctor --recipe-only`) | Fails on a recipe schema error ([harness.md](harness.md)) |
+| `harness:validate` | Hedera Harness Tier 0–1: static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build` | Clean environments only (refuses a `.env`); run by `scripts/verify-scaffold.mjs` in the generated project |
 | `format` | prettier on the three packages | Required by the CLI (IR-7); already-formatted files produce no diff |
 | `doctor` | Checks Node ≥ `engines.node`, Yarn, `.env` presence. Prints to stderr | — |
 | `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout. After a valid check it lists the generated deployments of the network (#24) | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
@@ -180,6 +182,7 @@ Every run used the **published** CLI (`create-scaffold-hbar@0.4.0` via `npx`) in
 | 3 | Node 24 + **Yarn 1.22.22** on `PATH` (no Corepack) | ✅ `yarn --version` inside the project reports `3.2.3` (delegated through `yarnPath`) |
 | 4 | `yarn install --immutable` on a clean checkout | ✅ lockfile is in sync |
 | 5 | Root `check`, `build`, dev server (`yarn start` → `GET /` 200 showing testnet/296, unknown route 404) | ✅ |
+| 6 | 2026-10-01 (#25): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export | ✅ `.harness/` copied into the generated project; `yarn harness:validate` there → `passed=true`, 0 findings (static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build`) |
 | E1 | **Original** `template.json` (initial commit) through the real CLI | ❌ crashes with `ZodError: Required` at `processTemplateManifest`, exit 1 → **IR-1** |
 | E2 | Fixed manifest, but the GitHub manifest lookup returns 404 (repo private/unpushed), `--yes` without `-s` | ❌ the CLI selects Foundry and demands `forge` → **IR-2** |
 | N1 | npm 11.16.0 argv logging | `--template` without `--` is consumed by npm → **DV-3** |
