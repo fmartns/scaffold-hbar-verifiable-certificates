@@ -61,7 +61,8 @@
     "setup": "node scripts/doctor.mjs && yarn workspace @sh/sdk setup",
     "hcs:topic": "yarn workspace @sh/sdk hcs:topic",
     "hts:settle": "yarn workspace @sh/sdk hts:settle",
-    "hts:token": "yarn workspace @sh/sdk hts:token"
+    "hts:token": "yarn workspace @sh/sdk hts:token",
+    "verify:testnet": "yarn workspace @sh/sdk verify:testnet"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
