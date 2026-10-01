@@ -79,7 +79,9 @@ needed. It must not reactivate the namespace while the compromised key is still 
 
 `packages/hardhat/deploy/00_deploy_credential_registry.ts` deploys with the deployer as admin and
 `hcsTopicNum` taken from `HEDERA_HCS_TOPIC_ID` (required on live networks; `0` on the in-process network). The deployer
-key is injected at runtime (`__RUNTIME_DEPLOYER_PRIVATE_KEY`); there is no default key.
+key is injected at runtime (`__RUNTIME_DEPLOYER_PRIVATE_KEY`); there is no default key. `yarn deploy --network
+<hederaTestnet|hederaLocal>` ends by recording the address, contract id and ABI in `packages/sdk/generated`
+([integration.md](integration.md#contract-abi-and-address-codegen)); no address is copied by hand.
 
 ## Tests
 

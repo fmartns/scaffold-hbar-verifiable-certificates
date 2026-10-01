@@ -44,6 +44,19 @@ export const NETWORKS: Record<HederaNetworkName, HederaNetwork> = {
 
 export const DEFAULT_NETWORK: HederaNetworkName = "testnet";
 
+/** Name of each network in `hardhat.config.ts` (`yarn deploy --network <name>`). */
+export const HARDHAT_NETWORK_NAMES: Record<HederaNetworkName, string> = {
+  testnet: "hederaTestnet",
+  mainnet: "hederaMainnet",
+  local: "hederaLocal",
+};
+
+/** The Hedera network served on an EVM chain id, or `null` (e.g. the in-process Hardhat network). */
+export function networkNameByChainId(chainId: number | bigint): HederaNetworkName | null {
+  const match = Object.values(NETWORKS).find(network => BigInt(network.chainId) === BigInt(chainId));
+  return match ? match.name : null;
+}
+
 type Env = Record<string, string | undefined>;
 
 export function isNetworkName(value: string): value is HederaNetworkName {
