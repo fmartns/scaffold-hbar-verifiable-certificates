@@ -156,9 +156,10 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout. After a valid check it lists the generated deployments of the network (#24) | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
 | `deploy` | `hardhat deploy` (pass `--network hederaTestnet`/`hederaLocal`), then the ABI/address codegen (#24) | Deploying is always explicit; the codegen always follows it |
 | `codegen` | Regenerates `packages/sdk/generated` from the compiled artifacts (and, with `--network`, that network's deployment files) | `hardhat codegen --check` fails on stale output |
+| `verify:testnet` | End-to-end credential validation on the real Testnet (#18); asks before paying, `--yes`/`--dry-run`/`--json`; refuses mainnet; writes `docs/evidence/testnet/<runId>.{md,json}` | Never part of `check` or CI: it spends Testnet HBAR and needs the operator |
 | `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` mirror the base scaffold naming | The CLI's outro/prune logic relies on this naming |
 
-Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `verify:testnet` (#18), `test:integration` (#13), `test:e2e` (#15).
+Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `test:integration` (#13), `test:e2e` (#15).
 
 ### 6.3 Deliberate differences from the base scaffold
 

@@ -6,3 +6,4 @@ export * from "./credentials";
 export * from "./mirror";
 export * from "./hcs";
 export * from "./network";
+export * from "./testnet";
