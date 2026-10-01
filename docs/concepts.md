@@ -46,11 +46,12 @@ HCS is evidence, not validity: the audit report explains `statusOf` and never ov
 | `CredentialRegistry`: issuer registry, `issue`, `revoke`, signer rotation, pause, deploy script and tests | Implemented | [credential-registry.md](credential-registry.md) |
 | Credential HCS messages: encode, decode, EIP-712 digests, `credentialId` | Implemented; format accepted by [ADR-002](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model) and [credential-schema.md](credential-schema.md) | `packages/sdk/hedera/hcs/credential-envelope.ts` |
 | HCS evidence topic creation (`yarn hcs:topic`) | Implemented | [hcs-envelope.md](hcs-envelope.md) |
-| HCS publisher (consensus receipt, transaction ID, HashScan URL) | Implemented for the settlement envelope; publishing credential messages is part of #41 | [hcs-envelope.md](hcs-envelope.md) |
+| HCS publisher (consensus receipt, transaction ID, HashScan URL) | Implemented; the issuer console publishes credential messages through it | [hcs-envelope.md](hcs-envelope.md), [issuer-console.md](issuer-console.md) |
 | Mirror Node credential audit (`auditCredential`, `auditHcsMessage`) | Implemented | [credential-audit.md](credential-audit.md) |
 | Environment dashboard and `GET /api/env/status` | Implemented | [dashboard.md](dashboard.md) |
-| SDK credential module (build, sign, publish, issue, verify, revoke) | Planned | [#41](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/41) |
-| Issuer console | Planned | [#12](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/12) |
+| Credential data model and identifiers (`deriveCredential`) | Implemented | [credential-schema.md](credential-schema.md) |
+| Issuer console (`/issuer`: issue, revoke, audit) | Implemented | [issuer-console.md](issuer-console.md) |
+| SDK credential module (build, sign, publish, issue, verify, revoke) | Planned; the console ships its minimal core in `packages/sdk/hedera/credentials` | [#41](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/41) |
 | Public verifier (`/verify/[credentialId]`, link and QR code) | Planned | [#40](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/40) |
 | Event attendance certificate demo | Planned | [#42](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/42) |
 | Storage of the credential document | Not included, by decision: the JSON holder document is the credential and stays with the holder | [ADR-004](architecture.md#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template) |
