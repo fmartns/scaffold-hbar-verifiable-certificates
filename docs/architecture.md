@@ -1,5 +1,10 @@
 # Architecture Decision Record
 
+Records: [ADR-001](#adr-001--verifiable-settlement-trust-model-identity-idempotency-and-replay-protection) (settlement
+trust model, identity, idempotency, replay) · ADR-002 (reserved for #39: privacy, on-chain vs off-chain, credential
+data model) · [ADR-003](#adr-003--hedera-harness-adopt-the-deterministic-tiers)
+(Hedera Harness).
+
 ## ADR-001 — Verifiable settlement: trust model, identity, idempotency and replay protection
 
 | Field | Value |
@@ -975,3 +980,41 @@ Adopt conventions from Scaffold HBAR's Next.js + Hardhat monorepo and generated 
 | **`HcsRef`** | The publisher's *claim* of where the attestation sits in HCS; not verifiable on-chain. |
 | **Commit-before-execute** | The attestation is in HCS (consensus-timestamped) before it is settled. |
 | **Finding** | A result of the Mirror-based audit ([§6.8](#68-mirror-node-audit-contract-10)). |
+
+---
+
+## ADR-003 — Hedera Harness: adopt the deterministic tiers
+
+| Field | Value |
+|---|---|
+| Status | **Proposed** — accepted when the pull request that closes #25 is merged |
+| Date | 2026-10-01 |
+| Issue | #25 (depends on #1, #3) |
+| Related | [harness.md](harness.md) (details and usage), [bounty-rules.md](bounty-rules.md) GATE-20 / D-13, #14 (self-check) |
+
+**Context.** The bounty calls Hedera Harness "strongly recommended … and it is not required", and makes "Harness spec
+and validators submitted, if the harness was used" an eligibility item. The harness ([hedera-dev/hedera-harness](https://github.com/hedera-dev/hedera-harness),
+v1.2.2) drives a coding agent from a PRD and judges the result with tiered validators: deterministic files/static/secret
+/command checks (Tier 0–1), a Playwright route gate (2), an agent-graded acceptance contract (3) and Testnet chain
+validation with an ephemeral browser signer (3.5). Tier 0–1 also runs alone, without an agent (`hedera-harness validate`).
+
+**Decision.** Use the harness, at Tier 0–1 only:
+
+- Ship the recipe in `.harness/` — `spec.yaml` (harness spec, secret scan), `validators/static.json`,
+  `validators/yarn.json` and `prd.md` — so every scaffolded project inherits it.
+- The validators encode this template's gate and `AGENTS.md` invariants and must pass both in this repository and in a
+  generated project (so `template.json`, which the CLI deletes, is not asserted).
+- `yarn check` loads the recipe (`yarn harness:doctor`); `yarn harness:validate` runs the full deterministic validation
+  in clean environments (CI/#14, `scripts/verify-scaffold.mjs`, before submission).
+- Tiers 2, 3 and 3.5 are not enabled: route checks belong to the self-check (#14), agent grading is non-deterministic
+  and needs credentials, and the browser burner signer contradicts the server-side operator model; Testnet evidence
+  comes from #18.
+
+**Consequences.** The harness spec and validators are submitted with the repository (GATE-20 applies). The harness is
+not presented as having generated the code: it is the template's validation recipe and the supported path for
+extending the template with an agent. `yarn harness:validate` refuses a workspace with a `.env`, by design. A schema
+change in a future harness release is caught by `yarn harness:doctor`; the dependency is pinned to `^1.2.2`.
+
+**Alternatives rejected.** *Not using the harness* — it would only need a note, but loses an executable, agent-facing
+statement of the invariants and the strongly-recommended signal. *Writing our own validator format* — a second
+implementation of what the harness already defines, and not what GATE-20 asks for.

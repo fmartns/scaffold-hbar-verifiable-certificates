@@ -167,6 +167,7 @@ Coluna **Origem**: `Lista` = consta na lista literal do gate (A.1); `Submissão`
 - **[OFICIAL] S5:** o *harness spec* (chamado *recipe*) fica em `.harness/spec.yaml`; os *validators* ficam em `.harness/validators/` (ex.: `static.json`, `yarn.json`, `playwright-smoke.yaml`, e `acceptance-contract.json` opcional para o Tier 3); o PRD em `.harness/prd.md`. Diretórios `.harness/skills/`, `.harness/runtime/` e `.harness/runs/` são gitignored por padrão.
 - Camadas de validação (S5): Tier 0–1 (determinístico, padrão), Tier 2 (Playwright, `validators.playwright`), Tier 3 (semântico, `validator.enabled`), Tier 3.5 (on-chain, `chainValidation`, testnet).
 - **[NÃO ESPECIFICADO]** por S1: quais arquivos exatos compõem "harness spec and validators" para fins de submissão; o que caracteriza "used" (uso parcial?). Os caminhos acima vêm de S5, não de S1.
+- **[DERIVADO] Decisão do projeto (#25, ADR-003):** o harness **é usado**, nos tiers determinísticos 0–1 (`hedera-harness` 1.2.2). Portanto GATE-20 **se aplica**: `.harness/spec.yaml`, `.harness/validators/static.json`, `.harness/validators/yarn.json` (e `.harness/prd.md`) são versionados e submetidos. Tiers 2, 3 e 3.5 não estão habilitados. Justificativa e cobertura: [harness.md](harness.md).
 
 ---
 
@@ -294,7 +295,7 @@ Nota: a transação testnet do gate e a profundidade de serviços da rubrica sã
 | **D-10** | **Teste de transação × exceção "read-only/forked-mainnet"** | S1 exige "a verifiable testnet transaction" **e** aceita, "where testnet is unavailable", integração read-only ou forked-mainnet. A relação entre as duas frases não é explicada. | Projeto **não usa** a exceção: apresentar transação real em Testnet. |
 | **D-11** | **"Core routes"** | S1 não define quais são as "rotas principais" nem a forma da checagem ("return OK"); tampouco o comando de start. | Considerar toda rota de página/API do app e a raiz `/`; documentar a lista no README. |
 | **D-12** | **Escopo de "no committed secrets / .env"** | S1 não define se vale para o histórico do Git nem se `.env.example` é permitido. O CLI oficial gera `.env.example` (S4: `generate-env-example.ts`). | `.env.example` só com chaves vazias; nenhum `.env*` real; varrer **todo o histórico** (conservador). |
-| **D-13** | **Alcance de "harness used"** | S1 não define uso parcial nem lista de arquivos; caminhos vêm de S5. | Se **qualquer** uso do harness ocorreu, submeter `.harness/spec.yaml` e `.harness/validators/`. |
+| **D-13** | **Alcance de "harness used"** | S1 não define uso parcial nem lista de arquivos; caminhos vêm de S5. | Se **qualquer** uso do harness ocorreu, submeter `.harness/spec.yaml` e `.harness/validators/`. **#25:** harness usado (tiers 0–1) → submeter ambos ([harness.md](harness.md)). |
 | **D-14** | **Integração de ecossistema × serviço nativo** | S1 lista integrações de terceiros (DEX/oracle/bridge...) sob "Which integrations count" e avalia serviços nativos em RUB-04; não diz se um serviço nativo isolado conta como RUB-01. | Demonstrar ambos separadamente. |
 | **D-15** | **Nome da organização em S4** | `THIRD-PARTY-TEMPLATES.md` recomenda "Fork [`buidler-labs/scaffold-hbar`]", enquanto o repositório oficial atual é `hedera-dev/scaffold-hbar` (S3). Esse guia também **não menciona** `template.json` nem `AGENTS.md`. | Seguir S1 para requisitos; S4 apenas como referência técnica. |
 | **D-16** | **Script de self-check / link de registro** | S1 manda rodar o "self-check script" sem nomeá-lo/linkar; nenhum encontrado na org `hedera-dev` em 2026-09-18. Registro: "URL TBC". | Reconfirmar (ver 1.2). Sem script oficial, o checklist da Parte C faz o papel de autoverificação. |
@@ -341,14 +342,14 @@ Comandos entre `<>` dependem da implementação e **ainda não existem** no repo
 | [ ] | **CHK-17** | GATE-17 | Build de todos os workspaces (contratos + Next.js) termina com código 0. `<build>` | Log, código 0 |
 | [ ] | **CHK-18** | GATE-18 | Após CHK-15–17, **start** da aplicação (`<start>`/`<dev>`) sobe sem erro; requisitar cada rota principal listada no README (incluindo `/` e rotas de API) → **HTTP 200** e conteúdo esperado. Executar também na pipeline de scaffold do CHK-09 (projeto **gerado**, não só o repositório-fonte). | Lista rota → status |
 | [ ] | **CHK-19** | GATE-19 | `git ls-files \| grep -E '(^\|/)\.env($\|\.)'` só devolve `.env.example`; varredura de secrets em **todo o histórico** (ex.: `gitleaks detect`); `.env.example` sem valores; `.gitignore` cobre `.env*`. | Saída da varredura |
-| [ ] | **CHK-20** | GATE-20 | Se o Harness foi usado em **qualquer** etapa: `.harness/spec.yaml` e `.harness/validators/` commitados, `harness doctor`/`validate` executados; caso contrário, registrar explicitamente "harness não utilizado". | Arquivos ou declaração |
+| [ ] | **CHK-20** | GATE-20 | Se o Harness foi usado em **qualquer** etapa: `.harness/spec.yaml` e `.harness/validators/` commitados, `harness doctor`/`validate` executados; caso contrário, registrar explicitamente "harness não utilizado". **Usado (#25):** `yarn harness:doctor` e, num clone limpo, `yarn harness:validate` → `passed=true`. | Arquivos ou declaração |
 
 ### C.2 Pacote de submissão
 
 - [ ] **CHK-21** Link do **repositório público** (na `main`, no commit final congelado — anotar SHA).
 - [ ] **CHK-22** Link **Hashscan e/ou Mirror Node** da transação Testnet (CHK-14).
 - [ ] **CHK-23** **Dev-ex survey** preenchido (CHK-00e).
-- [ ] **CHK-24** **Harness spec e validators** anexados, se aplicável (CHK-20).
+- [ ] **CHK-24** **Harness spec e validators** anexados, se aplicável (CHK-20). **Aplicável (#25):** link para `.harness/` no commit submetido.
 - [ ] **CHK-25** Submissão enviada **antes de 04/10, 23:59 ET**; comprovante arquivado.
 - [ ] **CHK-26** Nenhum commit posterior ao SHA submetido altera o comportamento validado (congelar a `main` ou usar tag).
 
@@ -404,3 +405,4 @@ Preencher a cada revalidação contra as fontes. A linha de **#20** é **obrigat
 |---|---|
 | 2026-09-18 | Criação: prazos, gate (GATE-01–20), rubrica (RUB-01–04), divergências (D-01–16) e checklist (CHK-00–32). |
 | 2026-09-18 | #4: D-01 e D-02 verificados por execução; Apêndice A atualizado. |
+| 2026-10-01 | #25: decisão sobre o Hedera Harness (usado, tiers 0–1) registrada em A.5, D-13, CHK-20 e CHK-24. |
