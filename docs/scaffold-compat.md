@@ -130,6 +130,7 @@ Behavior of the current CLI takes precedence; each divergence is recorded, not r
 
 - **One `.env` at the repository root** feeds every workspace (`hardhat.config.ts` loads it with `dotenv`; `next.config.ts` with `@next/env`). Only `NEXT_PUBLIC_*` variables reach the browser; secrets must never use that prefix.
 - **`@sh/sdk` is consumed as TypeScript source** (`main`/`types` → `index.ts`; the Next.js app uses `transpilePackages`; Hardhat loads it through `ts-node`). It has no build output, so no workspace depends on a build order and a fresh clone type-checks without building anything.
+- **ABIs and addresses are generated, never copied** (#24): `packages/sdk/generated/` is written by `packages/hardhat/scripts/generateTsAbis.ts` (the base scaffold's name; it writes to the SDK instead of `packages/nextjs/contracts/deployedContracts.ts`, so the SDK, the CLIs and the app share one manifest). The output is committed and checked for drift by `yarn test`. See [integration.md](integration.md#contract-abi-and-address-codegen).
 - **`packages/sdk/hedera/networks.ts` is the only place** where chain ids and RPC/Mirror/HashScan URLs live (REQ-04-02). Hardhat and Next.js import it; a URL literal anywhere else is a defect.
 - **No default deployer key.** `hardhat.config.ts` only gives live networks an account when `__RUNTIME_DEPLOYER_PRIVATE_KEY` is injected at run time; otherwise a deploy fails instead of using a well-known key (REQ-04-03).
 - **Hardhat network is not forked by default.** Forking emulates HTS only and is opt-in (REQ-04-06).
@@ -150,10 +151,12 @@ Every root script exits non-zero on failure and chains with `&&`, so a failing s
 | `check` | `lint` → `check-types` → `test` | **The script #14 runs.** Must not need network or secrets |
 | `format` | prettier on the three packages | Required by the CLI (IR-7); already-formatted files produce no diff |
 | `doctor` | Checks Node ≥ `engines.node`, Yarn, `.env` presence. Prints to stderr | — |
-| `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
+| `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout. After a valid check it lists the generated deployments of the network (#24) | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
+| `deploy` | `hardhat deploy` (pass `--network hederaTestnet`/`hederaLocal`), then the ABI/address codegen (#24) | Deploying is always explicit; the codegen always follows it |
+| `codegen` | Regenerates `packages/sdk/generated` from the compiled artifacts (and, with `--network`, that network's deployment files) | `hardhat codegen --check` fails on stale output |
 | `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` mirror the base scaffold naming | The CLI's outro/prune logic relies on this naming |
 
-Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `deploy`, `verify:testnet` (#9/#18), `test:integration` (#13), `test:e2e` (#15).
+Not implemented on purpose (absent, so calling them fails with "Couldn't find a script"): `verify:testnet` (#18), `test:integration` (#13), `test:e2e` (#15).
 
 ### 6.3 Deliberate differences from the base scaffold
 

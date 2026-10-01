@@ -1,21 +1,15 @@
 /**
  * `CredentialRegistry` (#9) as seen by the audit: the event signatures it emits, how to decode their logs, and
  * `statusOf(credentialId)` read over the JSON-RPC relay. `statusOf` is the AUTHORITY on a credential's state; Mirror
- * Node logs are evidence of how it got there. A Hardhat test pins these signatures against the compiled contract until
- * ABI codegen (#24) replaces the hand-written fragments.
+ * Node logs are evidence of how it got there. The ABI is the one generated from the compiled contract (#24).
  */
 import { Interface, getAddress } from "ethers";
+import { CredentialRegistryAbi } from "../../generated";
 import type { HederaNetwork } from "../networks";
 import type { Hex } from "../hcs/envelope";
 import type { ContractLog } from "./mirror";
 
-export const CREDENTIAL_REGISTRY_ABI = [
-  "event CredentialIssued(bytes32 indexed credentialId, bytes32 indexed issuer, bytes32 indexed subjectCommitment, bytes32 credentialHash, bytes32 schemaId, bytes32 attestationDigest, address signer, uint64 signedAt, uint64 hcsSequence, uint64 hcsConsensusTimestampNs)",
-  "event CredentialRevoked(bytes32 indexed credentialId, bytes32 indexed issuer, address indexed revokedBy, bool byAdmin, uint64 revokedAt)",
-  "function statusOf(bytes32 credentialId) view returns (tuple(bytes32 issuer, bytes32 credentialHash, bytes32 subjectCommitment, address signer, uint64 issuedAt, uint64 revokedAt, uint8 status))",
-  "function hcsTopicNum() view returns (uint64)",
-  "function paused() view returns (bool)",
-] as const;
+export const CREDENTIAL_REGISTRY_ABI = CredentialRegistryAbi;
 
 const REGISTRY = new Interface(CREDENTIAL_REGISTRY_ABI);
 

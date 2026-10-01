@@ -5,7 +5,9 @@
   "scripts": {
     "check-types": "tsc --noEmit --incremental",
     "clean": "hardhat clean",
+    "codegen": "hardhat codegen",
     "compile": "hardhat compile",
+    "deploy": "hardhat deploy",
     "format": "prettier --write './**/*.(ts|sol)'",
     "lint": "eslint --max-warnings=0",
     "lint-staged": "eslint --no-warn-ignored",
