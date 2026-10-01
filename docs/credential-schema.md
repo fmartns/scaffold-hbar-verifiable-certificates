@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Specified** by issue #38; approved when its PR is merged. This is the data-model part of ADR-002. The privacy and trust parts are #39. |
+| Status | **Specified** by issue #38. This is the data-model part of ADR-002; the privacy and trust parts are [ADR-002 in architecture.md](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model) (#39). |
 | Normative for | `CredentialRegistry` (#9), the credential SDK (#41), the issuer console (#12), the public verifier (#40), the audit (#10) |
 | Implementation | `packages/sdk/hedera/credentials/schema.ts` (the only implementation of these formulas) |
 | Supersedes | For credentials, ADR-001 §4.4 (R1–R6 for `externalEventId`). The reasoning is the same, applied to credentials. |
@@ -18,7 +18,8 @@ The key words MUST, MUST NOT, SHOULD and MAY follow RFC 2119.
    injective for a fixed type list, so two different values can never encode to the same bytes. This is the same
    lesson as ADR-001 R4.
 3. **No personal data on-chain.** The holder appears only as a salted commitment. Names, e-mails, CPF numbers and the
-   document itself stay off-chain (see #39 for what is public).
+   document itself stay off-chain ([ADR-002](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model)
+   CD2 lists what is public).
 4. **Every hash has a domain tag.** Each formula starts with its own `keccak256("hedera-verifiable-credentials.<kind>.v1")`,
    so a value computed for one purpose can never be valid for another.
 
@@ -65,7 +66,7 @@ There are two deliberate differences from the issue's field list:
   which only bound how long one *signature* can be submitted (ADR-001 D7). Mixing the two would let an expired
   signature window look like an expired credential, or the reverse.
   *Trade-off:* a verifier holding only a `credentialId` sees `issued` or `revoked`, but not the expiry date. Showing
-  expiry without the document would require a v2 struct. That decision is left to #39/#40 and recorded in [§7](#7-open-points).
+  expiry without the document would require a v2 struct. ADR-002 CD5 keeps v1 ([§7](#7-open-points)).
 
 ## 3. Identifiers
 
@@ -224,8 +225,9 @@ the claims, which is the genericity the demo (#42) relies on.
 
 ## 7. Open points
 
-- **Expiry visible from `credentialId` alone.** In v1, expiry is committed in `credentialHash` and checked with the
-  document. If #40 must show "expired" without the document, add `expiresAt` to a v2 signed struct and to the
-  registry record. That is a breaking change of the signing format, so it must be decided in #39 before #40.
+- **Expiry visible from `credentialId` alone.** *Decided in
+  [ADR-002 CD5](architecture.md#adr-002--credentials-privacy-on-chain-vs-off-chain-and-data-model):* v1 stays. Expiry
+  is committed in `credentialHash` and checked with the document; #40 shows "expired" only when it has the document.
+  Status-only expiry would be a `version = 2` struct accepted alongside v1, never a change of v1.
 - **Deterministic salts.** An issuer MAY derive the salt as `HMAC(issuerSecret, credentialId)` instead of drawing it
   at random, so that it can re-send a lost document. It must still be unique per credential and kept secret.
