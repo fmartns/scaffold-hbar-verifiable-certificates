@@ -12,7 +12,8 @@
     "lint-staged": "eslint --max-warnings=0 --no-warn-ignored",
     "serve": "next start",
     "start": "next dev",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@sh/sdk": "workspace:*",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.49.0",
     "@testing-library/dom": "^10",
     "@testing-library/react": "^16",
     "@types/node": "^20.19.8",
