@@ -2,7 +2,7 @@
 
 `packages/sdk/hedera/audit` correlates the HCS evidence of a credential's lifecycle (issuance and revocation) with the
 state and logs of `CredentialRegistry` (#9), through the Mirror Node. It returns one report type that the public
-verifier (#40), the issuer console (#12) and the testnet validation (#18) consume as-is. None of them re-implements
+verifier (#40), the issuer console ([issuer-console.md](issuer-console.md)) and the testnet validation (#18) consume as-is. None of them re-implements
 the correlation rules.
 
 ```ts
