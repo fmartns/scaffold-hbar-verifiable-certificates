@@ -19,6 +19,7 @@
     "check-types": "yarn sdk:check-types && yarn hardhat:check-types && yarn next:check-types",
     "test": "yarn sdk:test && yarn hardhat:test",
     "check": "yarn lint && yarn check-types && yarn test",
+    "self-check": "node scripts/self-check.mjs",
     "format": "yarn sdk:format && yarn hardhat:format && yarn next:format",
     "deploy": "yarn hardhat:deploy",
     "codegen": "yarn hardhat:codegen",

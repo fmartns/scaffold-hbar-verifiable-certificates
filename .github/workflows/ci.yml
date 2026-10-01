@@ -1,0 +1,55 @@
+# Runs the eligibility self-check (scripts/self-check.mjs) on every push and pull request, from a fresh runner:
+# no dependency or build cache, no .env, no credentials. See docs/self-check.md.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  self-check:
+    name: self-check (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # The gate's minimum (engines.node) and the current LTS.
+        node: ["20.18.3", "24"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks scans the whole history, not only the last commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Enable Corepack (Yarn pinned by packageManager)
+        run: corepack enable
+
+      - name: Install gitleaks ${{ env.GITLEAKS_VERSION }}
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      # `yarn self-check` runs this same file, but Yarn refuses to run scripts before the first install, and the clean
+      # install is one of the requirements under test.
+      - name: Self-check
+        run: node scripts/self-check.mjs
