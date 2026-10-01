@@ -23,6 +23,7 @@
     "deploy": "yarn hardhat:deploy",
     "codegen": "yarn hardhat:codegen",
     "doctor": "node scripts/doctor.mjs",
+    "secrets:scan": "node scripts/secret-scan.mjs",
     "hardhat:check-types": "yarn workspace @sh/hardhat check-types",
     "hardhat:clean": "yarn workspace @sh/hardhat clean",
     "hardhat:codegen": "yarn workspace @sh/hardhat codegen",

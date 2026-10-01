@@ -30,4 +30,32 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // Client code runs in the browser: it may import types from the SDK root, but values only from the
+    // client-safe subpaths listed in AGENTS.md (docs/dashboard.md, docs/security.md).
+    files: ["app/**/_components/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@sh/sdk",
+              allowTypeImports: true,
+              message:
+                "Client code imports values from client-safe subpaths only (@sh/sdk/hedera/wallet, contracts, audit/registry, networks); the SDK root is server-side.",
+            },
+          ],
+          patterns: [
+            {
+              regex: "^@sh/sdk/(?!hedera/(wallet|contracts|audit/registry|networks)$)",
+              allowTypeImports: true,
+              message:
+                "Client code imports values from client-safe subpaths only (@sh/sdk/hedera/wallet, contracts, audit/registry, networks); the SDK root is server-side.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
