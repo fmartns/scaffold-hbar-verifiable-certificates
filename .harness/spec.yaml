@@ -1,0 +1,41 @@
+schemaVersion: 2
+
+name: verifiable-settlement
+description: >-
+  Extend the verifiable-settlement template (oracle attestation, HCS evidence,
+  Solidity SettlementRouter, HTS credit, Mirror Node audit) without breaking its
+  settlement guarantees. The feature to build is described in .harness/prd.md.
+
+# The existing app must be healthy before an agent touches it.
+baseline:
+  commands:
+    - name: install
+      command: yarn install
+    - name: check
+      command: yarn check
+
+constraints:
+  packageManager: yarn@3.2.3
+  workspaces:
+    - packages/hardhat
+    - packages/nextjs
+    - packages/sdk
+
+# The harness defaults, plus the secret-bearing names this template uses
+# (HEDERA_OPERATOR_KEY, DEPLOYER_PRIVATE_KEY_ENCRYPTED, ORACLE_API_KEY) and the
+# rule that a secret never uses the NEXT_PUBLIC_ prefix.
+secretScan:
+  failOnFiles:
+    - .env
+    - packages/hardhat/.env
+    - packages/nextjs/.env
+    - packages/sdk/.env
+  patterns:
+    - name: private-key-assignment
+      pattern: "(PRIVATE_KEY|OPERATOR_KEY|HEDERA_OPERATOR_PRIVATE_KEY)\\s*=\\s*(0x)?[0-9a-fA-F]{32,}"
+    - name: oracle-api-key-assignment
+      pattern: "ORACLE_API_KEY[ \\t]*=[ \\t]*[^\\s#]{8,}"
+    - name: next-public-secret
+      pattern: "NEXT_PUBLIC_[A-Z0-9_]*(PRIVATE_KEY|OPERATOR_KEY|MNEMONIC|SECRET)"
+
+# Tiers 2, 3 and 3.5 are deliberately not enabled; see docs/harness.md.

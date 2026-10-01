@@ -6234,6 +6234,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hedera-harness@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "hedera-harness@npm:1.2.2"
+  dependencies:
+    yaml: ^2.9.0
+  peerDependencies:
+    "@hiero-ledger/sdk": ^2.86.2
+    playwright: ^1.61.1
+  peerDependenciesMeta:
+    "@hiero-ledger/sdk":
+      optional: true
+    playwright:
+      optional: true
+  bin:
+    hedera-harness: dist/index.js
+  checksum: a3033d232d4de0d95da80283a04d313b76c06069b79e61f41034e48fcd1ceb624b5ef03718ea4904f8165cd27a3a25aea925889aa513dde1042a17dbc210eb63
+  languageName: node
+  linkType: hard
+
 "help-me@npm:^5.0.0":
   version: 5.0.0
   resolution: "help-me@npm:5.0.0"
@@ -8480,6 +8499,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "scaffold-hbar-verifiable-settlement@workspace:."
   dependencies:
+    hedera-harness: ^1.2.2
     husky: ^9.1.6
     lint-staged: ^15.2.10
   languageName: unknown
@@ -10150,7 +10170,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.7.0":
+"yaml@npm:^2.7.0, yaml@npm:^2.9.0":
   version: 2.9.1
   resolution: "yaml@npm:2.9.1"
   bin:

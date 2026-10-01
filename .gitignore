@@ -33,6 +33,15 @@ gitleaks-report*.json
 .vscode
 .idea
 
+# hedera-harness: run artifacts, vendored skills and caches (the recipe in .harness/ is versioned)
+.harness/runs/
+.harness/runtime/
+.harness/cache/
+.harness/skills/
+.skill-cache/
+.harness-skills/
+.harness-context/
+
 # build output
 dist
 *.tsbuildinfo

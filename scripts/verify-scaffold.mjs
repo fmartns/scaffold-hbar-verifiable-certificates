@@ -116,8 +116,9 @@ step("Run yarn setup without credentials: it must fail cleanly and never print s
   expect(/MISSING_ENV/.test(setup.stdout), "yarn setup names the missing variables");
 }
 
-step("Run the project contracts (lint, types, tests, build)");
-for (const script of ["lint", "check-types", "test", "build"]) run("yarn", [script], { cwd: dir });
+step("Run the Hedera Harness validators (static invariants, secret scan, install, lint, types, tests, build)");
+expect(exists(".harness/spec.yaml") && exists(".harness/validators/static.json"), "harness recipe copied");
+run("yarn", ["harness:validate"], { cwd: dir });
 
 if (failures.length > 0) {
   console.error(`\n${failures.length} check(s) failed.`);
