@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc --noEmit -p tsconfig.json",
     "check-types": "tsc --noEmit -p tsconfig.json",
+    "coverage": "vitest run --coverage",
     "format": "prettier --write './**/*.ts'",
     "lint": "eslint --max-warnings=0",
     "lint-staged": "eslint --no-warn-ignored",
@@ -22,6 +23,7 @@
     "@types/node": "^20.19.8",
     "@typescript-eslint/eslint-plugin": "~8.27.0",
     "@typescript-eslint/parser": "~8.27.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "~9.23.0",
     "eslint-config-prettier": "~10.1.1",
     "eslint-plugin-prettier": "~5.2.4",
