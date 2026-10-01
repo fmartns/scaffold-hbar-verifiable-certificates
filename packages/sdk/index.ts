@@ -3,6 +3,7 @@ export * from "./hedera/environment-report";
 export * from "./hedera/networks";
 export * from "./hedera/explorer";
 export * from "./hedera/wallet";
+export * from "./hedera/contracts";
 export * from "./hedera/health";
 export * from "./hedera/hcs";
 export * from "./hedera/hts";
