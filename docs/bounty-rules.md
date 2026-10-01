@@ -323,46 +323,51 @@ Comandos entre `<>` dependem da implementação e **ainda não existem** no repo
 
 | ✔ | ID | Ref. gate | Verificação | Evidência esperada |
 |:-:|---|---|---|---|
-| [ ] | **CHK-01** | GATE-02 | `gh repo view <owner>/<repo> --json visibility` → `PUBLIC`; abrir a URL em janela anônima. | URL + saída |
-| [ ] | **CHK-02** | GATE-03 | Arquivo `LICENSE` é MIT; `gh repo view --json licenseInfo` → `MIT`; sem código copiado de terceiros com licença incompatível. | Saída + revisão de origem do código |
-| [ ] | **CHK-03** | GATE-04 | Existem `packages/hardhat` (ou `foundry`), `packages/nextjs` (e demais) **com conteúdo** — não só `.gitkeep`. | `ls packages/*` |
-| [ ] | **CHK-04** | GATE-05 | Aplicação Next.js (App Router, `nextjs-app`) em `packages/nextjs`. | `package.json` do pacote |
-| [ ] | **CHK-05** | GATE-06 | Hardhat **ou** Foundry configurado e compilando (`packages/hardhat`). | Saída de compilação |
-| [ ] | **CHK-06** | GATE-07 | `package.json` raiz com `workspaces` listando os packages; gerenciador **npm ou Yarn** (não pnpm); `packageManager` coerente. | `package.json` raiz |
-| [ ] | **CHK-07** | GATE-08 | `engines.node` = `>=20.18.3` no `package.json` raiz; testar com Node exatamente **20.18.3** (`node -v`). | `node -v` + instalação bem-sucedida |
-| [ ] | **CHK-08** | GATE-09 | `template.json` na **raiz da `main`**, JSON válido, com `name` **e** bloco `create-scaffold-hbar` (`capabilities`/`defaults`) coerente com o repo (`nextjs-app`, `hardhat`/`foundry`, `yarn`/`npm`). Validar contra o schema de S4 (`TemplateManifestSchema`) — **não** basta `JSON.parse`. Conferir que a API do GitHub o serve: `gh api repos/<owner>/<repo>/contents/template.json`. | Saída da validação de schema |
-| [ ] | **CHK-09** | GATE-01 | Em diretório vazio e com Node 20.18.3: `npm create scaffold-hbar@latest -- --template <owner>/<repo>` (forma de S2, a única que entrega a flag ao CLI com o npm atual) **e** a forma literal de S1 (sem `--`), esta apenas para **reconfirmar** o comportamento de D-02. Conclui sem erro. Registrar qualquer diferença. | Log completo das duas execuções |
-| [ ] | **CHK-10** | GATE-10 | `README.md` na raiz: pré-requisitos, setup, env vars, comandos, rotas, arquitetura, link para evidência Testnet e para este documento. | Revisão |
-| [ ] | **CHK-11** | GATE-11 | `AGENTS.md` na raiz, específico ao projeto e verdadeiro em relação aos comandos existentes. | Revisão |
-| [ ] | **CHK-12** | GATE-12 | Ao menos um serviço Hedera nativo real integrado no código executado (HCS e/ou HTS e/ou contrato Solidity implantado). Sem mocks no caminho da evidência. | Trecho de código + tx |
-| [ ] | **CHK-13** | GATE-13 | Executar o fluxo na **Hedera Testnet** (`HEDERA_NETWORK=testnet`) e obter ≥ 1 transação com status `SUCCESS`. Conta e chaves **efêmeras/de teste**, saldo do faucet da Hedera. | Transaction ID |
-| [ ] | **CHK-14** | GATE-14 | Abrir `https://hashscan.io/testnet/transaction/<txId>` **e/ou** `https://testnet.mirrornode.hedera.com/api/v1/transactions/<txId>` (formato `0.0.x-seconds-nanos`): retorna `result: SUCCESS` e é a transação do fluxo do projeto. Repetir a checagem **após** aguardar indexação (consistência eventual). Link presente no README e no formulário. | Links + resposta |
-| [ ] | **CHK-15** | GATE-15 | **Clone limpo** (sem `node_modules`, sem `.env`) → instalação com o gerenciador escolhido termina com código 0. `<yarn install>` ou `<npm install>` | Log, código de saída 0 |
-| [ ] | **CHK-16** | GATE-16 | Lint de todos os workspaces termina com código 0 e **sem warnings tolerados**. `<lint>` | Log, código 0 |
-| [ ] | **CHK-17** | GATE-17 | Build de todos os workspaces (contratos + Next.js) termina com código 0. `<build>` | Log, código 0 |
-| [ ] | **CHK-18** | GATE-18 | Após CHK-15–17, **start** da aplicação (`<start>`/`<dev>`) sobe sem erro; requisitar cada rota principal listada no README (incluindo `/` e rotas de API) → **HTTP 200** e conteúdo esperado. Executar também na pipeline de scaffold do CHK-09 (projeto **gerado**, não só o repositório-fonte). | Lista rota → status |
-| [ ] | **CHK-19** | GATE-19 | `git ls-files \| grep -E '(^\|/)\.env($\|\.)'` só devolve `.env.example`; varredura de secrets em **todo o histórico** (ex.: `gitleaks detect`); `.env.example` sem valores; `.gitignore` cobre `.env*`. | Saída da varredura |
-| [ ] | **CHK-20** | GATE-20 | Se o Harness foi usado em **qualquer** etapa: `.harness/spec.yaml` e `.harness/validators/` commitados, `harness doctor`/`validate` executados; caso contrário, registrar explicitamente "harness não utilizado". **Usado (#25):** `yarn harness:doctor` e, num clone limpo, `yarn harness:validate` → `passed=true`. | Arquivos ou declaração |
+| [x] | **CHK-01** | GATE-02 | `gh repo view --json visibility` → `PUBLIC` (2026-10-01; repo made public for this). | [submission-package.md §1](submission-package.md#1-gate-part-a--all-20-items-verified-against-this-commit) |
+| [x] | **CHK-02** | GATE-03 | `LICENSE` was truncated (missing half the standard disclaimer) → GitHub read it as "Other". Fixed (#20, PR #64); `gh repo view --json licenseInfo` now → `MIT License`. No third-party code copied. | [submission-package.md §1](submission-package.md#1-gate-part-a--all-20-items-verified-against-this-commit) |
+| [x] | **CHK-03** | GATE-04 | `packages/hardhat`, `packages/nextjs`, `packages/sdk`, all with real content (contracts, deploy, tests; app routes; Hedera adapters). | `ls packages/*` |
+| [x] | **CHK-04** | GATE-05 | Next.js App Router app in `packages/nextjs` (`template.json`: `frontend: "nextjs-app"`). | `packages/nextjs/package.json` |
+| [x] | **CHK-05** | GATE-06 | Hardhat configured and compiling (`packages/hardhat`); also the live deploy to Testnet in #18. | `yarn hardhat:compile` / `yarn build` |
+| [x] | **CHK-06** | GATE-07 | Root `package.json`: `workspaces.packages` lists all three; `packageManager: yarn@3.2.3` (not pnpm). | root `package.json` |
+| [x] | **CHK-07** | GATE-08 | `engines.node: ">=20.18.3"`; self-check passes on the current toolchain. | `node scripts/self-check.mjs` |
+| [x] | **CHK-08** | GATE-09 | `node scripts/validate-template.mjs` → "satisfies the create-scaffold-hbar contract"; also validated against the real CLI's schema in #19 (local export + real GitHub-download runs, both 0 harness findings). | [scaffold-compat.md §7](scaffold-compat.md#7-validation-record), runs #7–8 |
+| [x] | **CHK-09** | GATE-01 | Real remote run (repo now public): `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` → scaffolds, installs, formats, commits; all structural checks pass. The literal S1 form without `--` still fails against current npm (D-02, unchanged) — use the `--` or `npx` form, as README already does. | [scaffold-compat.md §7](scaffold-compat.md#7-validation-record), run #8 |
+| [x] | **CHK-10** | GATE-10 | `README.md`: prerequisites, setup, env vars, commands, routes, architecture, links to Testnet evidence and this document. | Review |
+| [x] | **CHK-11** | GATE-11 | `AGENTS.md`: project-specific, every cited `yarn <script>` exists for real. | Review |
+| [x] | **CHK-12** | GATE-12 | HCS (evidence topic) + a deployed Solidity contract (`CredentialRegistry`) + Mirror Node, all exercised for real (not mocked) in #18. | [submission-package.md §2](submission-package.md#2-testnet-evidence-gate-1314) |
+| [x] | **CHK-13** | GATE-13 | 4 real Testnet transactions with `SUCCESS` (2 issuances + 2 revocations), ephemeral Testnet account funded by the faucet. | [submission-package.md §2](submission-package.md#2-testnet-evidence-gate-1314) |
+| [x] | **CHK-14** | GATE-14 | HashScan links for every transaction, checked after Mirror indexing; also in [docs/evidence/testnet/20261001T181216Z.md](evidence/testnet/20261001T181216Z.md) and linked from the README. | Same |
+| [x] | **CHK-15** | GATE-15 | `yarn install --immutable` → exit 0 (self-check). | `node scripts/self-check.mjs` |
+| [x] | **CHK-16** | GATE-16 | `yarn lint` → exit 0, no warnings (self-check). | Same |
+| [x] | **CHK-17** | GATE-17 | `yarn build` → exit 0 (self-check). | Same |
+| [x] | **CHK-18** | GATE-18 | `yarn serve` + `/`, `/dashboard`, `/api/env/status` → 200 (self-check); `/issuer` and `/verify` additionally covered live by the Playwright E2E suite (#15), including the full issue→verify→revoke→verify cycle. Also proven on the CHK-09 generated project. | `node scripts/self-check.mjs`; `yarn test:e2e` |
+| [x] | **CHK-19** | GATE-19 | `git ls-files \| grep -E '(^\|/)\.env($\|\.)'` → only `.env.example`; `yarn secrets:scan` → 0 findings over full history (78 commits, all refs) and working tree. | `yarn secrets:scan` |
+| [x] | **CHK-20** | GATE-20 | Harness used (#25, tiers 0–1): `.harness/spec.yaml`, `.harness/validators/{static,yarn}.json`, `.harness/prd.md` committed; `yarn harness:doctor` → ready; `yarn harness:validate` on a clean clone → `passed=true`, 0 findings. | `yarn harness:doctor` |
+
+All 20 gate items pass as of commit [`a49b8bb`](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/commit/a49b8bb86809bb2e9a9c1463f6d660068cbd594c)
+(2026-10-01). **CHK-00a/00b/00e remain open** — they need a human to re-browse S1 and find the dev-ex survey link; see
+[submission-package.md §5](submission-package.md#5-what-i-did-not-do).
 
 ### C.2 Pacote de submissão
 
-- [ ] **CHK-21** Link do **repositório público** (na `main`, no commit final congelado — anotar SHA).
-- [ ] **CHK-22** Link **Hashscan e/ou Mirror Node** da transação Testnet (CHK-14).
-- [ ] **CHK-23** **Dev-ex survey** preenchido (CHK-00e).
-- [ ] **CHK-24** **Harness spec e validators** anexados, se aplicável (CHK-20). **Aplicável (#25):** link para `.harness/` no commit submetido.
+- [ ] **CHK-21** Link do **repositório público** (na `main`, no commit final congelado — anotar SHA). Candidato atual: [`a49b8bb`](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/commit/a49b8bb86809bb2e9a9c1463f6d660068cbd594c) — **congelar apenas no momento do envio**, pois a `main` pode continuar avançando até lá.
+- [x] **CHK-22** Link **Hashscan e/ou Mirror Node** da transação Testnet (CHK-14). Ver [submission-package.md §2](submission-package.md#2-testnet-evidence-gate-1314).
+- [ ] **CHK-23** **Dev-ex survey** preenchido (CHK-00e). **Pendente de você**: link ainda não encontrado (ver submission-package.md §5).
+- [x] **CHK-24** **Harness spec e validators** anexados (#25): [`.harness/`](../.harness/) no commit submetido.
 - [ ] **CHK-25** Submissão enviada **antes de 04/10, 23:59 ET**; comprovante arquivado.
 - [ ] **CHK-26** Nenhum commit posterior ao SHA submetido altera o comportamento validado (congelar a `main` ou usar tag).
 
 ### C.3 Autoavaliação da rubrica (não bloqueante; orienta esforço)
 
 Não gera aprovação/reprovação; serve para priorizar melhorias por peso. Anexar breve justificativa por item.
+Avaliação completa: [submission-package.md §4](submission-package.md#4-rubric-self-assessment-part-b--not-a-gate-informs-effort-only).
 
-| ✔ | ID | Ref. rubrica | Pergunta de autoavaliação | Peso |
-|:-:|---|---|---|:-:|
-| [ ] | **CHK-27** | RUB-01 | Remover a integração externa (oracle) quebra o propósito do template? Um desenvolvedor obtém uma capacidade que "could not easily build alone"? Provedor de oracle escolhido e documentado? | 35 |
-| [ ] | **CHK-28** | RUB-02 | Um desenvolvedor desconhecido vai de scaffold → app rodando → entendimento do padrão **sem ajuda**? Setup, pré-requisitos, env vars, arquitetura e `AGENTS.md` claros e testados por alguém de fora? | 30 |
-| [ ] | **CHK-29** | RUB-03 | Código idiomático e legível? Monorepo bem estruturado? Testes **significativos** passando? Erros tratados? Sem código morto, `.gitkeep` órfãos ou "AI slop"? | 20 |
-| [ ] | **CHK-30** | RUB-04 | Há composição de múltiplos serviços nativos (ex.: HCS + Solidity + HTS) ou uso com profundidade real — além de uma única transferência de token? | 15 |
+| ✔ | ID | Ref. rubrica | Pergunta de autoavaliação | Peso | Leitura honesta |
+|:-:|---|---|---|:-:|---|
+| [x] | **CHK-27** | RUB-01 | Remover a integração externa quebra o propósito do template? | 35 | **Fraco — decisão pendente sua.** O projeto pivotou de "settlement" (com oracle de terceiros) para credenciais verificáveis; hoje as integrações são todas serviços **nativos** Hedera (HCS + Solidity + Mirror Node), não um DEX/oracle/bridge de terceiros como os exemplos de RUB-01. #26 decidiu explicitamente não adicionar storage descentralizado sem necessidade real — inventar uma integração agora só para pontuar seria o "AI slop" que RUB-03 penaliza. Ver as 3 opções em submission-package.md §6. |
+| [x] | **CHK-28** | RUB-02 | Setup, pré-requisitos, env vars, arquitetura e `AGENTS.md` claros e testados por alguém de fora? | 30 | Forte: README com quickstart, `docs/quick-start.md`, `docs/hedera.md`, ADRs 001–004, `docs/security.md`, `docs/testing.md`, `docs/troubleshooting.md`, todos sincronizados com comandos reais. |
+| [x] | **CHK-29** | RUB-03 | Código idiomático, testes significativos, sem "AI slop"? | 20 | Forte: 122 testes frontend + 918 SDK + 76 de contrato, `yarn check` limpo, ABIs geradas (nunca endereço literal). |
+| [x] | **CHK-30** | RUB-04 | Composição de múltiplos serviços nativos ou profundidade real? | 15 | Forte: HCS + Solidity (`CredentialRegistry`, autorização + proteção contra reemissão) + Mirror Node, comprovado ao vivo na Testnet (#18). |
 
 ### C.4 Decisão final (tarefa #20)
 
@@ -398,6 +403,9 @@ Preencher a cada revalidação contra as fontes. A linha de **#20** é **obrigat
 | 2026-09-18 | Claude Code (via WebFetch/`gh`) | Criação do documento | S1–S5 | — (baseline) | Ver limitações em 1.2 |
 | 2026-09-18 | Claude Code (execução do CLI) | Issue #4 — compatibilidade com `create-scaffold-hbar` | S4 (código + `npx` 0.4.0), npm | D-01 e D-02 resolvidos por execução ([scaffold-compat.md](scaffold-compat.md)) | Manifesto corrigido; forma com `--` |
 | _pendente_ | _____ | **Pré-submissão final — tarefa #20** (revalidar CLI em #19) | S1–S5 | | |
+| 2026-10-01 (parcial) | Claude Code (execução real) | #20 — checklist CHK-01–20/22/24/27–30 verificados contra o commit `a49b8bb`; ver [submission-package.md](submission-package.md) | S4 (CLI real, local + remoto), repositório próprio | GATE-03 falhava (LICENSE truncado, "Other" no GitHub) → corrigido. Nenhuma mudança encontrada em S1–S3/S5 **porque não foram reconferidas nesta passada** (ver abaixo) | LICENSE corrigido (#20, PR #64); demais evidências de gate anexadas |
+
+**S1–S3 e S5 não foram reconferidas nesta linha** — nenhuma ferramenta de navegador está disponível nesta sessão para reabrir a página oficial do bounty. **CHK-00a/00b continuam pendentes de um humano** antes do envio: reabrir S1 no navegador e confirmar que prazo, gate e rubrica citados aqui não mudaram desde 2026-09-18.
 
 ## Apêndice C — Histórico deste documento
 
@@ -406,3 +414,4 @@ Preencher a cada revalidação contra as fontes. A linha de **#20** é **obrigat
 | 2026-09-18 | Criação: prazos, gate (GATE-01–20), rubrica (RUB-01–04), divergências (D-01–16) e checklist (CHK-00–32). |
 | 2026-09-18 | #4: D-01 e D-02 verificados por execução; Apêndice A atualizado. |
 | 2026-10-01 | #25: decisão sobre o Hedera Harness (usado, tiers 0–1) registrada em A.5, D-13, CHK-20 e CHK-24. |
+| 2026-10-01 | #20: CHK-01–20, CHK-22, CHK-24 e CHK-27–30 verificados contra commit real e marcados com evidência; LICENSE corrigido (estava truncado, GATE-03 falhava); pacote de submissão em [submission-package.md](submission-package.md); CHK-00a/00b/00e/21/23/25/26 deixados abertos, pendentes do usuário. |

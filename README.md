@@ -321,6 +321,7 @@ Erros reais, com a mensagem que aparece. A lista completa está em [docs/trouble
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Compatibilidade com o CLI | [docs/scaffold-compat.md](docs/scaffold-compat.md) |
 | Regras do bounty e benchmark de DX | [docs/bounty-rules.md](docs/bounty-rules.md), [docs/dx-benchmark.md](docs/dx-benchmark.md) |
+| Pacote de submissão (#20) | [docs/submission-package.md](docs/submission-package.md) |
 | Guia para agentes | [AGENTS.md](AGENTS.md) |
 
 Hedera Harness: **adotado** nos tiers determinísticos (0–1). O harness spec e os validators estão em [`.harness/`](.harness/) e vão junto com cada projeto gerado; para estender o template com um agente, edite `.harness/prd.md` e rode `npx hedera-harness run`. Decisão, o que cada validator protege e por que os tiers 2, 3 e 3.5 não estão habilitados: [docs/harness.md](docs/harness.md).
