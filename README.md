@@ -114,7 +114,8 @@ Monorepo Yarn Workspaces (`packages/hardhat`, `packages/nextjs`, `packages/sdk`)
 | `yarn check` | `lint` + `check-types` + `test` + `harness:doctor` (ciclo rápido de desenvolvimento) |
 | `yarn self-check` | Gate de elegibilidade completo: `template.json`, README/AGENTS.md, licença, `.env` e secrets (gitleaks), install, lint, tipos, testes, build e boot com rotas principais. Aponta o requisito que falhou; é o que a CI executa ([docs/self-check.md](docs/self-check.md)) |
 | `yarn secrets:scan` | Secret scan (gitleaks) do histórico git completo e do working tree, com valores sempre ocultos. Requer `gitleaks` instalado. Ver [docs/security.md](docs/security.md) |
-| `yarn test` | Testes do SDK e dos contratos |
+| `yarn test` | Testes do SDK, dos contratos (incl. o fluxo emissor → HCS → contrato → verificador) e do frontend; offline, sem credenciais |
+| `yarn coverage` | Os mesmos testes com cobertura; falha abaixo das metas de [docs/testing.md](docs/testing.md) |
 | `yarn harness:validate` | Validação determinística do Hedera Harness (tiers 0–1): arquivos, invariantes, varredura de segredos, `install --immutable`, `lint`, `check-types`, `test` e `build`. Use num clone limpo: falha de propósito se houver `.env` |
 
 Planejados nas issues seguintes: `yarn test:integration`, `yarn test:e2e` e `yarn verify:testnet`.

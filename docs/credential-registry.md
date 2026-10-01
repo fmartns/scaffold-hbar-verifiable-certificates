@@ -90,4 +90,5 @@ key is injected at runtime (`__RUNTIME_DEPLOYER_PRIVATE_KEY`); there is no defau
 `packages/hardhat/test/CredentialRegistry.test.ts` covers valid issuance, unregistered or inactive issuers, forged,
 tampered, malleable and cross-deployment signatures, re-issuance (`AlreadyIssued`) and conflicts
 (`ConflictingCredential`), revocation by the issuer, by unauthorized parties, after rotation and by the admin,
-admin limits, structure, freshness and pause.
+admin limits, structure, freshness and pause. `CredentialLifecycle.flow.test.ts` runs issuer → HCS → registry →
+verifier end to end on the compiled contract. Coverage target: 100% (95% branches), see [testing.md](testing.md).

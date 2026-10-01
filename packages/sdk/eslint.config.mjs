@@ -24,4 +24,14 @@ export default defineConfig([
       "prettier/prettier": ["warn", { endOfLine: "auto" }],
     },
   },
+  {
+    files: ["**/*.ts"],
+    ignores: ["**/*.test.ts", "**/test-fixtures.ts", "testing/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["**/testing", "**/testing/*"], message: "Test fixtures are for tests only." }] },
+      ],
+    },
+  },
 ]);
