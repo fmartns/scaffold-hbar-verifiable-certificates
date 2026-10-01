@@ -53,7 +53,7 @@ HCS is evidence, not validity: the audit report explains `statusOf` and never ov
 | Issuer console | Planned | [#12](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/12) |
 | Public verifier (`/verify/[credentialId]`, link and QR code) | Planned | [#40](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/40) |
 | Event attendance certificate demo | Planned | [#42](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/42) |
-| Storage of the credential document | Under evaluation | [#26](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/26) |
+| Storage of the credential document | Not included, by decision: the JSON holder document is the credential and stays with the holder | [ADR-004](architecture.md#adr-004--credential-document-no-visual-document-and-no-storage-in-the-template) |
 
 The oracle interface and the HTS settlement adapter come from the previous direction. They remain in the repository as
 history and are not on the credential critical path.
