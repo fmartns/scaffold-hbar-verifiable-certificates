@@ -18,4 +18,14 @@ export interface DeploymentRecord {
 
 export type GeneratedDeployments = Partial<Record<HederaNetworkName, Partial<Record<ContractName, DeploymentRecord>>>>;
 
-export const deployments: GeneratedDeployments = {};
+export const deployments: GeneratedDeployments = {
+  "testnet": {
+    "CredentialRegistry": {
+      "address": "0xaecba2223fdb10509a349db7c297cee978d2bc27",
+      "contractId": "0.0.10812888",
+      "deployTxHash": "0xaee5b5a71e708985b742894f21d721bcc3b2b49d1cfc3d1c542e67da2579cf8c",
+      "blockNumber": 41229704,
+      "abiHash": "0xc5af8a47ac58d2c4be6e01caf7eb771a3a12b4d86ea4ddbcdb947655a10c480d"
+    }
+  }
+};

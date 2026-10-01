@@ -46,6 +46,9 @@ description = "Public on-chain identifiers, hashes and commitments, never secret
 regexTarget = "line"
 regexes = [
   '''(?i)\b(?:eventKey|eventSource|externalEventId|streamId|contentHash|credentialId|credentialKey|externalCredentialId|credentialHash|subjectCommitment|schemaId|issuer|digest|attestationDigest)["']?\s*[:=]\s*["'`]0x[0-9a-f]{64}["'`]''',
+  # Same identifiers, written as human-readable prose in generated evidence docs (docs/evidence/testnet/*.md,
+  # yarn verify:testnet, #18): "Credential ID: `0x...`" instead of the camelCase field name.
+  '''(?i)\bcredential[ _-]?id\b\s*:\s*`0x[0-9a-f]{64}`''',
 ]
 
 [allowlist]
