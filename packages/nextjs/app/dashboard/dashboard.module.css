@@ -202,6 +202,35 @@
   opacity: 0.9;
 }
 
+.lookupForm {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 0.6rem;
+  margin: 0.9rem 0 0.75rem;
+}
+
+.lookupForm label {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+}
+
+.input {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .issues {
   margin: 0;
   padding-left: 1.1rem;
