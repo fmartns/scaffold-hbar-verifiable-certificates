@@ -26,7 +26,10 @@ export default defineConfig([
   },
   {
     files: ["**/*.ts"],
-    ignores: ["**/*.test.ts", "**/test-fixtures.ts", "testing/**"],
+    // `cli/demo-event-attendance.ts` (#42) is the one deliberate exception: a dev/demo-only script, isolated from
+    // the core, whose whole point is to run the credential cycle offline against the shared fake Hedera (never
+    // against a real network). It is not "runtime" in the sense this rule protects (nothing production imports it).
+    ignores: ["**/*.test.ts", "**/test-fixtures.ts", "testing/**", "cli/demo-event-attendance.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
