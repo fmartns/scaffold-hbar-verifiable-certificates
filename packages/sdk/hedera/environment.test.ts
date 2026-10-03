@@ -35,10 +35,10 @@ function accountJson(
 
 type Network = "testnet" | "mainnet";
 
-/** In-memory Mirror Node and relay. Unknown accounts answer 404, like the real service. */
+/** In-memory Mirror Node. Unknown accounts answer 404, like the real service. */
 function fakeNetwork(
   accounts: Partial<Record<Network, Record<string, AccountFixture>>> = {},
-  overrides: { down?: Network[]; status?: number; relayChainId?: number | "down" } = {},
+  overrides: { down?: Network[]; status?: number } = {},
 ) {
   const calls: string[] = [];
   const impl = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -46,13 +46,6 @@ function fakeNetwork(
     calls.push(`${init?.method ?? "GET"} ${url.host}${url.pathname}`);
     const network: Network | undefined =
       url.host === TESTNET_MIRROR ? "testnet" : url.host === MAINNET_MIRROR ? "mainnet" : undefined;
-    if (init?.method === "POST") {
-      if (overrides.relayChainId === "down" || overrides.relayChainId === undefined)
-        throw new Error("connect ECONNREFUSED");
-      return new Response(
-        JSON.stringify({ jsonrpc: "2.0", id: 1, result: `0x${overrides.relayChainId.toString(16)}` }),
-      );
-    }
     if (network && overrides.down?.includes(network)) throw new Error("connect ECONNREFUSED");
     if (network && overrides.status) return new Response("upstream error", { status: overrides.status });
     const id = decodeURIComponent(url.pathname.split("/").pop() ?? "");
@@ -289,18 +282,10 @@ describe("scenario 4 — wrong network", () => {
     expect(net.calls).toEqual([]);
   });
 
-  it("detects a JSON-RPC relay that reports another chain ID", async () => {
-    const net = fakeNetwork({ testnet: { [ACCOUNT]: { balance: 50n * HBAR } } }, { relayChainId: 295 });
-    const env = { ...validEnv, HEDERA_RPC_URL: "https://relay.example.org/api" };
-    const result = failure(await validateHederaEnvironment(env, { fetch: net.fetch, inspectKey: inspectMatching }));
-    expect(codes(result)).toEqual(["NETWORK_MISMATCH"]);
-    expect(result.issues[0].details).toMatchObject({ reportedChainId: 295 });
-  });
-
   it("rejects a malformed endpoint override", async () => {
     const result = failure(
       await validateHederaEnvironment(
-        { ...validEnv, HEDERA_RPC_URL: "not a url" },
+        { ...validEnv, HEDERA_MIRROR_NODE_URL: "not a url" },
         { fetch: fakeNetwork().fetch, inspectKey: inspectMatching },
       ),
     );
@@ -317,7 +302,6 @@ describe("success", () => {
       ok: true,
       status: "valid",
       network: "testnet",
-      chainId: 296,
       accountId: ACCOUNT,
       balance: { tinybars: "123450000000", hbar: "1234.5" },
       minimumBalance: { tinybars: "2000000000", hbar: "20" },
@@ -361,7 +345,6 @@ describe("success", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.network).toBe("mainnet");
-    expect(result.chainId).toBe(295);
     expect(result.hashscanUrl).toBe("https://hashscan.io/mainnet/account/0.0.1234");
     expect(result.minimumBalance.hbar).toBe("10");
     expect(result.warnings.map(w => w.code)).toEqual(["MAINNET_SELECTED"]);
@@ -397,29 +380,21 @@ describe("network trouble is not a configuration error", () => {
     expect(result.status).toBe("unverified");
     expect(isUnverified(result)).toBe(true);
   });
-
-  it("warns about an unreachable relay without failing the environment", async () => {
-    const net = fakeNetwork({ testnet: { [ACCOUNT]: { balance: 50n * HBAR } } }, { relayChainId: "down" });
-    const env = { ...validEnv, HEDERA_RPC_URL: "https://relay.example.org/api" };
-    const result = await validateHederaEnvironment(env, { fetch: net.fetch, inspectKey: inspectMatching });
-    expect(result.ok && result.warnings.map(w => w.code)).toEqual(["RPC_UNAVAILABLE"]);
-  });
 });
 
 describe("secrets never leak", () => {
-  const relaySecret = "TOPSECRET-relay-token";
+  const urlSecret = "TOPSECRET-mirror-token";
   const env = {
     ...validEnv,
-    HEDERA_RPC_URL: `https://user:hunter2@relay.example.org/api?apikey=${relaySecret}`,
-    HEDERA_MIRROR_NODE_URL: `https://mirror.example.org/v1?token=${relaySecret}`,
+    HEDERA_MIRROR_NODE_URL: `https://user:hunter2@mirror.example.org/v1?apikey=${urlSecret}`,
   };
 
   const scenarios: [string, () => Promise<EnvironmentValidation>][] = [
     [
       "success",
       () =>
-        validateHederaEnvironment(env, {
-          fetch: fakeNetwork({ testnet: { [ACCOUNT]: { balance: 50n * HBAR } } }, { relayChainId: 296 }).fetch,
+        validateHederaEnvironment(validEnv, {
+          fetch: fakeNetwork({ testnet: { [ACCOUNT]: { balance: 50n * HBAR } } }).fetch,
           inspectKey: inspectMatching,
         }),
     ],
@@ -452,20 +427,12 @@ describe("secrets never leak", () => {
           { fetch: fakeNetwork().fetch, inspectKey: inspectMatching },
         ),
     ],
-    [
-      "rpc mismatch",
-      () =>
-        validateHederaEnvironment(env, {
-          fetch: fakeNetwork({ testnet: { [ACCOUNT]: { balance: 50n * HBAR } } }, { relayChainId: 295 }).fetch,
-          inspectKey: inspectMatching,
-        }),
-    ],
   ];
 
   it.each(scenarios)("%s: result and report contain no key, credential or token", async (_name, run) => {
     const result = await run();
     const text = `${JSON.stringify(result)}\n${formatEnvironmentReport(result).join("\n")}`;
-    for (const secret of [SECRET_KEY, "hunter2", relaySecret, "apikey", "user:"]) expect(text).not.toContain(secret);
+    for (const secret of [SECRET_KEY, "hunter2", urlSecret, "apikey", "user:"]) expect(text).not.toContain(secret);
   });
 
   it("reduces URLs to their origin", () => {
@@ -532,7 +499,7 @@ describe("report", () => {
     const text = formatEnvironmentReport(
       await validateHederaEnvironment(validEnv, { fetch: net.fetch, inspectKey: inspectMatching }),
     ).join("\n");
-    expect(text).toContain("testnet (chain ID 296)");
+    expect(text).toContain("Network:  testnet");
     expect(text).toContain(ACCOUNT);
     expect(text).toContain("https://hashscan.io/testnet/account/0.0.1234");
   });

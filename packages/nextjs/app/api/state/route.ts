@@ -8,14 +8,20 @@ export const dynamic = "force-dynamic";
 export function GET() {
   return respond(async () => {
     const service = await certificateService();
-    const [issuer, certificates] = await Promise.all([service.store.readIssuer(), service.store.listCertificates()]);
-    const current = issuer?.network === service.config.network ? issuer : null;
+    const [issuer, accreditation, certificates] = await Promise.all([
+      service.store.readIssuer(),
+      service.store.readAccreditation(),
+      service.store.listCertificates(),
+    ]);
+    const onNetwork = <T extends { network: string }>(record: T | null) =>
+      record?.network === service.config.network ? record : null;
     return {
       network: service.config.network,
       hashscanUrl: service.config.hashscanUrl,
       mirrorNodeUrl: service.config.mirrorNodeUrl,
       issuerName: ISSUER_NAME,
-      issuer: current,
+      issuer: onNetwork(issuer),
+      accreditation: onNetwork(accreditation),
       holders: HOLDERS,
       policy: ENROLLMENT_POLICY,
       certificates: certificates.map(toRegisterEntry),

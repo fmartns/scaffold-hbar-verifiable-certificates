@@ -1,5 +1,5 @@
 // Browser-side client of the certificate API. Types only from the SDK: nothing server-side reaches the bundle.
-import type { Decision, DocumentCheck, IssuerRecord, RegisterEntry } from "@sh/sdk/certificates";
+import type { AccreditationRecord, Decision, DocumentCheck, IssuerRecord, RegisterEntry } from "@sh/sdk/certificates";
 
 export type { Decision, DocumentCheck, RegisterEntry };
 
@@ -9,6 +9,7 @@ export interface ConsoleState {
   mirrorNodeUrl: string;
   issuerName: string;
   issuer: IssuerRecord | null;
+  accreditation: AccreditationRecord | null;
   holders: string[];
   policy: { offering: string; prerequisite: string; minimumGrade: number };
   certificates: RegisterEntry[];
@@ -43,7 +44,9 @@ const json = (body: unknown): RequestInit => ({
 
 export const api = {
   state: () => call<ConsoleState>("/api/state"),
-  initializeIssuer: () => call<IssuerRecord>("/api/issuer", { method: "POST" }),
+  initialize: () =>
+    call<{ issuer: IssuerRecord; accreditation: AccreditationRecord }>("/api/issuer", { method: "POST" }),
+  withdrawAccreditation: () => call<AccreditationRecord>("/api/accreditation/withdraw", { method: "POST" }),
   issue: (input: { holder: string; holderName: string; studentId: string; course: string; grade: number }) =>
     call<RegisterEntry>("/api/certificates", json(input)),
   revoke: (certificateId: string) =>

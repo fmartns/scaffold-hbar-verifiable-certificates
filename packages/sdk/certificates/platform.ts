@@ -1,19 +1,20 @@
 /**
- * Platform B, the relying party. It never calls the issuer: it asks the holder for a proof and decides from what the
- * proof and Hedera say.
+ * Platform B, the relying party. It never calls the issuer: it asks the accreditation registry which issuers to trust,
+ * asks the holder for a proof, and decides from what the proof and Hedera say.
  *
- * - Enrollment: "Advanced Solidity" requires a non-revoked "Solidity Basics" certificate from a trusted issuer with a
- *   grade of at least 70. Platform B learns the course and that the grade is high enough, never the grade itself, the
- *   holder's name or student id.
+ * - Enrollment: "Advanced Solidity" requires a non-revoked "Solidity Basics" certificate whose credential definition was
+ *   accredited for that course at the time asked, with a grade of at least 70. Platform B learns the course and that
+ *   the grade is high enough, never the grade itself, the holder's name or student id.
  * - Document check: is this PDF exactly the picture of a certificate the holder controls, and is it still valid?
  *   The holder reveals `document_sha256`; Platform B hashes the file it was given and compares.
  */
 import type { AnonCredsProof, AnonCredsProofRequest } from "@credo-ts/anoncreds";
 import type { Agent } from "@credo-ts/core";
+import type { AccreditationReader } from "./accreditation";
 import { CertificateError } from "./errors";
 import { sha256Hex } from "./hcs1";
 import { anoncredsNonce, buildProofRequest, createPresentation, verifyPresentation } from "./presentation";
-import type { Verification } from "./presentation";
+import type { RequestedAttribute, RequestedPredicate, Verification } from "./presentation";
 
 export const ENROLLMENT_POLICY = {
   offering: "Advanced Solidity",
@@ -21,67 +22,83 @@ export const ENROLLMENT_POLICY = {
   minimumGrade: 70,
 } as const;
 
-export function enrollmentRequest(credentialDefinitionId: string, asOf: number): AnonCredsProofRequest {
-  return buildProofRequest({
-    name: `Enrollment in ${ENROLLMENT_POLICY.offering}`,
-    credentialDefinitionId,
-    reveal: [{ name: "course" }],
-    predicates: [{ name: "grade", minimum: ENROLLMENT_POLICY.minimumGrade }],
-    asOf,
-    nonce: anoncredsNonce(),
-  });
-}
-
-export function documentRequest(credentialDefinitionId: string, asOf: number): AnonCredsProofRequest {
-  return buildProofRequest({
-    name: "Certificate document check",
-    credentialDefinitionId,
-    reveal: [{ name: "course" }, { name: "certificate_id" }, { name: "document_sha256" }],
-    asOf,
-    nonce: anoncredsNonce(),
-  });
+export interface PlatformContext {
+  holder: Agent;
+  /** The credential the holder presents; absent when the holder has none (e.g. only a copy of someone's PDF). */
+  credentialId?: string;
+  verifier: Agent;
+  accreditation: AccreditationReader;
 }
 
 export interface Decision {
   approved: boolean;
   reasons: string[];
-  request: AnonCredsProofRequest;
-  /** Absent when the holder could not even build a proof. */
+  /** The proof request Platform B sent; absent when no issuer was accredited, so nothing could be asked. */
+  request?: AnonCredsProofRequest;
+  /** Absent when the holder could not build a proof. */
   verification?: Verification;
+  /** Whether the credential definition the proof used was accredited for the course at the time asked. */
+  accreditation?: { credentialDefinitionId: string; accredited: boolean };
 }
 
-/** Runs one request/present/verify round between a holder and Platform B. A holder failure is a denial, not an error. */
-async function round(
-  holder: Agent,
-  credentialId: string | undefined,
-  verifier: Agent,
-  request: AnonCredsProofRequest,
-): Promise<{ proof?: AnonCredsProof; verification?: Verification; failure?: string }> {
-  if (!credentialId) return { failure: "The holder has no certificate to present." };
+const utc = (seconds: number) => new Date(seconds * 1000).toISOString();
+
+/** Request → presentation → verification → accreditation, for proofs about `ENROLLMENT_POLICY.prerequisite`. */
+async function decide(
+  context: PlatformContext,
+  asOf: number,
+  ask: { name: string; reveal: RequestedAttribute[]; predicates?: RequestedPredicate[] },
+): Promise<Decision> {
+  const course = ENROLLMENT_POLICY.prerequisite;
+  const trusted = await context.accreditation.credentialDefinitions(course);
+  if (trusted.length === 0)
+    return { approved: false, reasons: [`No issuer has ever been accredited for "${course}".`] };
+
+  const request = buildProofRequest({ ...ask, credentialDefinitionIds: trusted, asOf, nonce: anoncredsNonce() });
+  if (!context.credentialId)
+    return { approved: false, reasons: ["The holder has no certificate to present."], request };
+
   let proof: AnonCredsProof;
   try {
-    proof = await createPresentation(holder, credentialId, request);
+    proof = await createPresentation(context.holder, context.credentialId, request);
   } catch (error) {
-    if (error instanceof CertificateError && error.code === "PROOF_UNAVAILABLE") return { failure: error.message };
+    if (error instanceof CertificateError && error.code === "PROOF_UNAVAILABLE") {
+      return { approved: false, reasons: [error.message], request };
+    }
     throw error;
   }
-  return { proof, verification: await verifyPresentation(verifier, request, proof) };
-}
-
-export async function decideEnrollment(
-  context: { holder: Agent; credentialId?: string; verifier: Agent; trustedCredentialDefinitionId: string },
-  asOf: number,
-): Promise<Decision> {
-  const request = enrollmentRequest(context.trustedCredentialDefinitionId, asOf);
-  const { verification, failure } = await round(context.holder, context.credentialId, context.verifier, request);
-  if (!verification) return { approved: false, reasons: [failure!], request };
+  const verification = await verifyPresentation(context.verifier, request, proof);
 
   const reasons: string[] = [];
   if (!verification.verified) reasons.push(verification.reason ?? "The proof does not verify.");
-  if (verification.revealed.course !== ENROLLMENT_POLICY.prerequisite) {
-    reasons.push(`The certificate is for "${verification.revealed.course}", not "${ENROLLMENT_POLICY.prerequisite}".`);
+  const credentialDefinitionId = verification.resolved[0]?.credentialDefinitionId ?? "";
+  const accredited = await context.accreditation.isAccredited(course, credentialDefinitionId, asOf);
+  if (!accredited) reasons.push(`The certificate's issuer was not accredited for "${course}" at ${utc(asOf)}.`);
+  return {
+    approved: reasons.length === 0,
+    reasons,
+    request,
+    verification,
+    accreditation: { credentialDefinitionId, accredited },
+  };
+}
+
+/** Platform B decides on enrollment in Advanced Solidity, as of `asOf` (Unix seconds). */
+export async function decideEnrollment(context: PlatformContext, asOf: number): Promise<Decision> {
+  const decision = await decide(context, asOf, {
+    name: `Enrollment in ${ENROLLMENT_POLICY.offering}`,
+    reveal: [{ name: "course" }],
+    predicates: [{ name: "grade", minimum: ENROLLMENT_POLICY.minimumGrade }],
+  });
+  const course = decision.verification?.revealed.course;
+  if (decision.verification && course !== ENROLLMENT_POLICY.prerequisite) {
+    return {
+      ...decision,
+      approved: false,
+      reasons: [...decision.reasons, `The certificate is for "${course}", not "${ENROLLMENT_POLICY.prerequisite}".`],
+    };
   }
-  return { approved: reasons.length === 0, reasons, request, verification };
+  return decision;
 }
 
 export interface DocumentCheck extends Decision {
@@ -93,18 +110,19 @@ export interface DocumentCheck extends Decision {
 
 /** `verifyDownloadedCertificate`: is `file` the document of a credential the holder proves, valid at `asOf`? */
 export async function verifyDownloadedCertificate(
-  context: { holder: Agent; credentialId?: string; verifier: Agent; trustedCredentialDefinitionId: string },
+  context: PlatformContext,
   file: Uint8Array,
   asOf: number,
 ): Promise<DocumentCheck> {
   const fileSha256 = sha256Hex(file);
-  const request = documentRequest(context.trustedCredentialDefinitionId, asOf);
-  const { verification, failure } = await round(context.holder, context.credentialId, context.verifier, request);
-  if (!verification) return { approved: false, reasons: [failure!], request, fileSha256, documentMatches: false };
-
-  const documentMatches = verification.revealed.document_sha256 === fileSha256;
-  const reasons: string[] = [];
-  if (!documentMatches) reasons.push("The file is not the document this credential commits to (SHA-256 mismatch).");
-  if (!verification.verified) reasons.push(verification.reason ?? "The proof does not verify.");
-  return { approved: reasons.length === 0, reasons, request, verification, fileSha256, documentMatches };
+  const decision = await decide(context, asOf, {
+    name: "Certificate document check",
+    reveal: [{ name: "course" }, { name: "certificate_id" }, { name: "document_sha256" }],
+  });
+  const documentMatches = decision.verification?.revealed.document_sha256 === fileSha256;
+  const reasons = [...decision.reasons];
+  if (decision.verification && !documentMatches) {
+    reasons.unshift("The file is not the document this credential commits to (SHA-256 mismatch).");
+  }
+  return { ...decision, approved: decision.approved && documentMatches, reasons, fileSha256, documentMatches };
 }

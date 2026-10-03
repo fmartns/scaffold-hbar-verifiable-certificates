@@ -1,0 +1,13 @@
+# dependencies
+node_modules
+
+# coverage
+coverage
+coverage.json
+
+# hardhat files
+cache
+artifacts
+
+# typescript
+*.tsbuildinfo
