@@ -4792,17 +4792,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-function@npm:^1.0.0":
+"async-function@npm:1.0.0":
   version: 1.0.0
   resolution: "async-function@npm:1.0.0"
   checksum: 9102e246d1ed9b37ac36f57f0a6ca55226876553251a31fc80677e71471f463a54c872dc78d5d7f80740c8ba624395cccbe8b60f7b690c4418f487d8e9fd1106
   languageName: node
   linkType: hard
 
-"async-generator-function@npm:^1.0.0":
+"async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+  version: 1.0.0
+  resolution: "async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::version=1.0.0&hash=05c6a0&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  checksum: 57be3cf2e42516df5d9fd11537f473be5d6090620dcb3766a3acc135105c2af6c1296c42701803ac9f296f3ba99bededf318bf3b685912e240c196c8a5a0b04d
+  languageName: node
+  linkType: hard
+
+"async-generator-function@npm:1.0.0":
   version: 1.0.0
   resolution: "async-generator-function@npm:1.0.0"
   checksum: 74a71a4a2dd7afd06ebb612f6d612c7f4766a351bedffde466023bf6dae629e46b0d2cd38786239e0fbf245de0c7df76035465e16d1213774a0efb22fec0d713
+  languageName: node
+  linkType: hard
+
+"async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+  version: 1.0.0
+  resolution: "async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::version=1.0.0&hash=97baef&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  checksum: f57dece0c77f1132ece0145c2adf540d827068671b484f43309e19073bec1a223de5cef4a74230a2b51689d61f6fcd4a6e29433bc36476d2bf79e3174ab1c9f2
   languageName: node
   linkType: hard
 
@@ -7430,10 +7444,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"generator-function@npm:^2.0.0":
+"generator-function@npm:2.0.1":
   version: 2.0.1
   resolution: "generator-function@npm:2.0.1"
   checksum: 3bf87f7b0230de5d74529677e6c3ceb3b7b5d9618b5a22d92b45ce3876defbaf5a77791b25a61b0fa7d13f95675b5ff67a7769f3b9af33f096e34653519e873d
+  languageName: node
+  linkType: hard
+
+"generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+  version: 2.0.1
+  resolution: "generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::version=2.0.1&hash=0832bf&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  checksum: a47c7822e1f7a69b11cc0c3b54e8e4e140b921b3478cbf065ec0af97a714213510e54e85edd4453aa0ae15098f1f378ec0f07a5656fcf11f1c853722ab589216
   languageName: node
   linkType: hard
 
