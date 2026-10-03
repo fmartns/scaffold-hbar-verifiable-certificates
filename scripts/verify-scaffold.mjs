@@ -67,7 +67,7 @@ run(
     "--frontend",
     "nextjs-app",
     "--solidity-framework",
-    "none",
+    "hardhat",
     "--package-manager",
     "yarn",
     "--network",
