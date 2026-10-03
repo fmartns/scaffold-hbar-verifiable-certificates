@@ -57,3 +57,6 @@ coverage
 /packages/nextjs/test-results
 /packages/nextjs/playwright-report
 /packages/nextjs/playwright/.cache
+
+# Local agent wallets (Askar), issuer state, tails files and cached certificates. Never commit.
+.data/

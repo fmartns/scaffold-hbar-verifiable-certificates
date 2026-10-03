@@ -2,7 +2,8 @@
   "name": "@sh/sdk",
   "version": "0.0.1",
   "private": true,
-  "description": "Hedera, oracle and Mirror Node adapters shared by the contracts and the frontend. Consumed as TypeScript source by the other workspaces.",
+  "type": "module",
+  "description": "AnonCreds certificates on Hedera: Credo agents, the Hedera Verifiable Data Registry, HCS-1 documents and the PDF renderer. Consumed as TypeScript source by the Next.js app.",
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
@@ -14,14 +15,10 @@
     "lint-staged": "eslint --no-warn-ignored",
     "setup": "tsx cli/setup.ts",
     "test": "vitest run",
-    "test:integration": "vitest run integration",
-    "hcs:topic": "tsx cli/create-topic.ts",
-    "hts:settle": "tsx cli/hts-settle.ts",
-    "hts:token": "tsx cli/hts-token.ts",
-    "verify:testnet": "tsx cli/verify-testnet.ts",
-    "demo:event-attendance": "tsx cli/demo-event-attendance.ts"
+    "issuer:init": "tsx cli/issuer-init.ts"
   },
   "devDependencies": {
+    "@hiero-did-sdk/hcs": "^0.1.8",
     "@types/node": "^20.19.8",
     "@types/qrcode": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "~8.27.0",
@@ -37,8 +34,17 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@hiero-ledger/sdk": "^2.80.0",
-    "ethers": "^6.14.0",
-    "qrcode": "^1.5.4"
+    "@credo-ts/anoncreds": "0.7.2",
+    "@credo-ts/askar": "0.7.2",
+    "@credo-ts/core": "0.7.2",
+    "@credo-ts/hedera": "0.7.2",
+    "@credo-ts/node": "0.7.2",
+    "@hashgraph/sdk": "^2.81.0",
+    "@hyperledger/anoncreds-nodejs": "^0.4.1",
+    "@openwallet-foundation/askar-nodejs": "^0.6.1",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "reflect-metadata": "^0.2.2",
+    "zstd-napi": "^0.0.13"
   }
 }

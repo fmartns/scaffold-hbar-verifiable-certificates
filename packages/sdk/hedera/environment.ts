@@ -96,6 +96,11 @@ export interface ValidEnvironment {
   mirrorNodeOrigin: string;
   /** True when the private key was checked against the account's key on the network. */
   keyVerified: boolean;
+  /**
+   * Curve of the operator key, taken from the account when the key was verified. A raw 32-byte hex key is valid for both
+   * curves, so this is what tells a client how to parse it. Null when the key could not be checked.
+   */
+  keyType: PublicKeyCandidate["type"] | null;
   warnings: EnvironmentIssue[];
   checkedAt: string;
 }
@@ -215,7 +220,7 @@ export const inspectPrivateKey: KeyInspector = async input => {
   const value = input.trim().replace(/^0x/i, "");
   if (!/^[0-9a-fA-F]+$/.test(value)) return null;
   try {
-    const { PrivateKey } = await import("@hiero-ledger/sdk");
+    const { PrivateKey } = await import("@hashgraph/sdk");
     const candidates: PublicKeyCandidate[] = [];
     if (value.length === 64) {
       // A raw 32-byte key is valid for both curves; the account's key decides which one it is.
@@ -676,6 +681,7 @@ export async function validateHederaEnvironment(
     hashscanUrl: network.hashscanUrl ? `${network.hashscanUrl}/account/${validAccountId}` : null,
     mirrorNodeOrigin: origin,
     keyVerified,
+    keyType: keyVerified && account.key ? (account.key.type as PublicKeyCandidate["type"]) : null,
     warnings,
     checkedAt,
   };
