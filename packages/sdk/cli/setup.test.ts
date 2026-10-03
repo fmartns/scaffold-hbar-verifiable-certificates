@@ -19,16 +19,28 @@ describe("runSetup", () => {
     expect(text).toContain("Environment validated");
   });
 
-  it("lists the generated deployments of the validated network, or the command that creates them", async () => {
+  it("shows the published issuer of the validated network, or the command that publishes it", async () => {
     const options = { fetch: answer(200, okAccount), inspectKey };
-    const missing = (await runSetup([], env, { ...options, manifest: {} })).lines.join("\n");
-    expect(missing).toContain("Contracts on testnet");
-    expect(missing).toContain("Run `yarn deploy --network hederaTestnet`.");
+    const missing = (await runSetup([], env, { ...options, issuer: null })).lines.join("\n");
+    expect(missing).toContain("No issuer on testnet yet. Next: yarn issuer:init");
 
-    const address = `0x${"a1".repeat(20)}` as const;
-    const record = { address, contractId: "0.0.5005", deployTxHash: null, blockNumber: null, abiHash: address };
-    const deployed = await runSetup([], env, { ...options, manifest: { testnet: { CredentialRegistry: record } } });
-    expect(deployed.lines.join("\n")).toContain(`CredentialRegistry: ${address} (0.0.5005)`);
+    const issuer = {
+      network: "testnet",
+      issuerDid: "did:hedera:testnet:z6Mk_0.0.10",
+      schemaId: "s",
+      credentialDefinitionId: "did:hedera:testnet:z6Mk_0.0.10/anoncreds/v1/PUBLIC_CRED_DEF/0.0.12",
+      revocationRegistryId: "r",
+      revocationEntriesTopicId: "0.0.13",
+      maximumCredentialNumber: 1000,
+      nextRevocationIndex: 1,
+      createdAt: "2026-10-03T00:00:00.000Z",
+    };
+    const published = (await runSetup([], env, { ...options, issuer })).lines.join("\n");
+    expect(published).toContain("Issuer on testnet: did:hedera:testnet:z6Mk_0.0.10");
+    expect(published).toContain("revocation entries topic: 0.0.13");
+
+    const otherNetwork = (await runSetup([], env, { ...options, issuer: { ...issuer, network: "mainnet" } })).lines;
+    expect(otherNetwork.join("\n")).toContain("No issuer on testnet yet");
   });
 
   it("stops before the Hedera-dependent steps and exits 1 when the environment is invalid", async () => {
