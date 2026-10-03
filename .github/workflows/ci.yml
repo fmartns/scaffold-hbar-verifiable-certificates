@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         # The gate's minimum (engines.node) and the current LTS.
-        node: ["20.18.3", "24"]
+        node: ["20.19.0", "24"]
     steps:
       - uses: actions/checkout@v4
         with:
