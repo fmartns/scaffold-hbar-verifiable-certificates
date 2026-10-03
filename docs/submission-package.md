@@ -8,7 +8,7 @@ material for the official submission form, which only the registered participant
 
 | ID | Requirement | Evidence | Status |
 |---|---|---|---|
-| GATE-01 | Scaffolds via `npm create scaffold-hbar@latest -- --template owner/repo` | `node scripts/verify-scaffold.mjs` (published CLI, local export of a clean clone); the `--remote` run needs the branch merged to `main` | see §6 |
+| GATE-01 | Scaffolds via `npm create scaffold-hbar@latest -- --template owner/repo` | `node scripts/verify-scaffold.mjs` (published CLI, local export of a clean clone, 2026-10-03): 15/15 structural checks, `harness:validate` `passed=true`, 0 findings ([run 9](scaffold-compat.md#7-validation-record)); the `--remote` run needs the branch merged to `main` | pass (local) |
 | GATE-02 | Public repository | <https://github.com/fmartns/scaffold-hbar-verifiable-settlement> | pass |
 | GATE-03 | MIT licence | `LICENSE` (full MIT text) | pass |
 | GATE-04 | Monorepo, separate `packages/` | `packages/hardhat` (AccreditationRegistry), `packages/nextjs`, `packages/sdk` | pass |
@@ -67,5 +67,5 @@ every decision.
 
 ## 6. Pending results
 
-- GATE-01: the local fresh-scaffold run (`verify-scaffold.mjs`) — result recorded in [scaffold-compat.md](scaffold-compat.md#7-validation-record).
+- GATE-01: the `--remote` fresh-scaffold run, after the merge to `main`.
 - GATE-19: gitleaks is not installed on the machine used for this pivot; the scan runs in CI on push.
