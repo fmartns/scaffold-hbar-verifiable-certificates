@@ -1,20 +1,66 @@
 {
-  "name": "verifiable-settlement-static",
-  "description": "Structural invariants of the verifiable-settlement template. Must hold in the template repository and in a project scaffolded from it (the CLI deletes template.json, so it is not asserted here).",
+  "name": "verifiable-certificates-static",
+  "description": "Structural invariants of the verifiable-certificates template. Must hold in the template repository and in a project scaffolded from it (the CLI deletes template.json, so it is not asserted here).",
   "jsonAssertions": [
-    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" },
-    { "file": "package.json", "path": "engines.node", "equals": ">=20.18.3" },
-    { "file": "package.json", "path": "license", "equals": "MIT" },
+    {
+      "file": "package.json",
+      "path": "packageManager",
+      "equals": "yarn@3.2.3"
+    },
+    {
+      "file": "package.json",
+      "path": "engines.node",
+      "equals": ">=20.19.0"
+    },
+    {
+      "file": "package.json",
+      "path": "license",
+      "equals": "MIT"
+    },
     {
       "file": "package.json",
       "path": "workspaces.packages",
-      "equals": ["packages/hardhat", "packages/nextjs", "packages/sdk"]
+      "equals": [
+        "packages/hardhat",
+        "packages/nextjs",
+        "packages/sdk"
+      ]
     },
-    { "file": "package.json", "path": "scripts.check", "equals": "yarn lint && yarn check-types && yarn test && yarn harness:doctor" },
-    { "file": "package.json", "path": "scripts.harness:validate", "equals": "hedera-harness validate" },
-    { "file": "packages/hardhat/package.json", "path": "name", "equals": "@sh/hardhat" },
-    { "file": "packages/nextjs/package.json", "path": "name", "equals": "@sh/nextjs" },
-    { "file": "packages/sdk/package.json", "path": "name", "equals": "@sh/sdk" }
+    {
+      "file": "package.json",
+      "path": "scripts.check",
+      "equals": "yarn lint && yarn check-types && yarn test && yarn harness:doctor"
+    },
+    {
+      "file": "package.json",
+      "path": "scripts.harness:validate",
+      "equals": "hedera-harness validate"
+    },
+    {
+      "file": "package.json",
+      "path": "scripts.issuer:init",
+      "equals": "yarn workspace @sh/sdk issuer:init"
+    },
+    {
+      "file": "packages/nextjs/package.json",
+      "path": "name",
+      "equals": "@sh/nextjs"
+    },
+    {
+      "file": "packages/sdk/package.json",
+      "path": "name",
+      "equals": "@sh/sdk"
+    },
+    {
+      "file": "packages/hardhat/package.json",
+      "path": "name",
+      "equals": "@sh/hardhat"
+    },
+    {
+      "file": "package.json",
+      "path": "scripts.codegen",
+      "equals": "yarn hardhat:codegen"
+    }
   ],
   "fileAssertions": {
     "required": [
@@ -25,25 +71,30 @@
       "package.json",
       "yarn.lock",
       ".yarn/releases/yarn-3.2.3.cjs",
+      ".yarn/patches",
       "docs/architecture.md",
       "docs/harness.md",
       ".harness/spec.yaml",
       ".harness/prd.md",
       "packages/hardhat/package.json",
-      "packages/hardhat/contracts",
+      "packages/hardhat/contracts/AccreditationRegistry.sol",
       "packages/nextjs/package.json",
       "packages/nextjs/app",
       "packages/sdk/package.json",
       "packages/sdk/hedera/networks.ts",
       "packages/sdk/hedera/environment.ts",
-      "packages/sdk/hedera/health.ts",
-      "packages/sdk/hedera/hcs",
-      "packages/sdk/hedera/hts",
-      "packages/sdk/hedera/oracle",
-      "packages/sdk/hedera/audit"
+      "packages/sdk/certificates/agents.ts",
+      "packages/sdk/certificates/hcs1.ts",
+      "packages/sdk/certificates/issuer.ts",
+      "packages/sdk/certificates/presentation.ts",
+      "packages/sdk/certificates/platform.ts",
+      "packages/sdk/testing/hedera.ts",
+      "packages/sdk/certificates/accreditation.ts",
+      "packages/sdk/generated/AccreditationRegistry.ts"
     ],
     "forbidden": [
       ".env",
+      ".data",
       "packages/hardhat/.env",
       "packages/nextjs/.env",
       "packages/sdk/.env",
@@ -55,27 +106,45 @@
   "textAssertions": [
     {
       "file": "README.md",
-      "contains": ["yarn install", "yarn setup", "yarn dev", "yarn check", "yarn harness:validate", "docs/harness.md"]
+      "contains": [
+        "yarn install",
+        "yarn setup",
+        "yarn issuer:init",
+        "yarn dev",
+        "yarn check",
+        "yarn harness:validate",
+        "docs/harness.md"
+      ]
     },
     {
       "file": "AGENTS.md",
       "contains": [
-        "eventKey",
-        "HCS is evidence, not validity",
         "validateHederaEnvironment",
-        "packages/sdk/hedera/hts",
-        "ADR-002",
+        "packages/sdk/certificates",
+        "HederaVdrRegistry",
+        "non_revoked",
+        "document_sha256",
         "yarn check",
-        "yarn harness:validate"
+        "yarn harness:validate",
+        "AccreditationRegistry"
       ]
     },
     {
       "file": ".gitignore",
-      "contains": [".env", ".harness/runs/", ".harness/runtime/"]
+      "contains": [
+        ".env",
+        ".data/",
+        ".harness/runs/",
+        ".harness/runtime/"
+      ]
     },
     {
       "file": ".env.example",
-      "contains": ["HEDERA_NETWORK=", "HEDERA_OPERATOR_ID=", "HEDERA_OPERATOR_KEY="]
+      "contains": [
+        "HEDERA_NETWORK=",
+        "HEDERA_OPERATOR_ID=",
+        "HEDERA_OPERATOR_KEY="
+      ]
     }
   ]
 }

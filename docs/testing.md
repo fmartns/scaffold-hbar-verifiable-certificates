@@ -1,96 +1,43 @@
 # Testing strategy
 
-One test matrix for the whole system (issue #13). Every implementation issue (#6, #9, #10, #11, #12, the public
-verifier) adds its tests to the layers below and reuses the shared fixtures instead of inventing its own.
-
 ## Principles
 
-- **Deterministic and offline.** `yarn test` needs no `.env`, credentials, testnet or internet. Throwaway keys and
-  RFC 6979 signatures make every byte reproducible; clocks are injected (`now`, `sleep`, fake `Date`).
-- **Real code, fake edges.** Only the network is replaced: Mirror Node REST, the JSON-RPC relay, HCS consensus and the
-  EIP-1193 wallet. The SDK, the compiled contract, the single HCS parser and the audit run as in production.
-- **One source of fixtures.** `@sh/sdk/testing` (below). A second fake Mirror Node, credential factory or identifier
-  formula is a bug, for the same reason a second parser is (AGENTS.md).
-- **Live tests are opt-in.** `*.integration.test.ts` files talk to the real Hedera Testnet and are skipped unless enabled
-  (`HCS_INTEGRATION=1`, `AUDIT_INTEGRATION=1`, … with `yarn workspace @sh/sdk test:integration`). They are evidence for
-  #18 (whose end-to-end run is `yarn verify:testnet`, [testnet-validation.md](testnet-validation.md)), never a CI requirement.
+- **Offline and credential-free.** `yarn test` needs no `.env`, account or network.
+- **Real code, fake transport.** `InMemoryHedera` (`packages/sdk/testing/hedera.ts`) replaces only the HCS transport of
+  the Hiero SDK (`HederaHcsService`: topics, ordered messages, consensus timestamps, the `toDate` filter the Mirror Node
+  applies) and the Mirror Node REST endpoints used for HCS-1. Credo, anoncreds-rs, Askar, the Hiero AnonCreds registry
+  that rebuilds revocation state, `HederaVdrRegistry`, the HCS-1 codec and the PDF renderer all run as in production.
+  Issuer DIDs are imported into the issuer wallet instead of registered.
+- **One fixture.** Every test that needs Hedera uses `InMemoryHedera`; runtime code never imports `testing/`.
+- **Live runs are manual.** Testnet is exercised by `yarn issuer:init` and the console; the links go in the README.
+
+Vitest processes `@credo-ts/*` and `@hiero-did-sdk/*` through one module graph (`server.deps.inline` in
+`packages/sdk/vitest.config.mts`). Without it Vitest may load two copies of the Hiero SDK, the fake would replace the
+wrong one, and a test could reach the network.
 
 ## The matrix
 
-| Layer        | Tooling                         | Where                                                         | Covers                                                                                                                                                       |
-| ------------ | ------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unit         | Vitest                          | `packages/sdk/**/*.test.ts`                                   | environment validator, networks, HCS envelope/credential envelope/publisher/transport, oracle, HTS, Mirror client, audit, health, wallet helpers, CLIs       |
-| Contract     | Hardhat + chai matchers         | `packages/hardhat/test/CredentialRegistry.test.ts`            | issuance, authenticity, re-issuance/conflict, structure, freshness, pause, revocation by issuer/stranger/relayer/admin, rotation, admin limits, ABI surface   |
-| Integration  | Hardhat + `@sh/sdk/testing`     | `packages/hardhat/test/*.flow.test.ts`, `CredentialAudit.test.ts` | issuer → HCS → `CredentialRegistry` → verifier on the compiled contract (below); SDK identifiers and event ABI pinned to the contract                       |
-| Frontend     | Vitest + jsdom + Testing Library | `packages/nextjs/app/**/*.test.tsx`, `app/api/**/route.test.ts` | dashboard page and every component, loading state, home page, `/api/env/status`, `/api/wallet/account`, error states, no secret rendered                    |
-
-### Integration: the credential lifecycle
-
-`packages/hardhat/test/CredentialLifecycle.flow.test.ts` runs the whole flow against the compiled `CredentialRegistry`
-on the Hardhat network:
-
-1. **Issuer** signs a `CredentialEvent`, validates it with `buildCredentialMessage` and publishes the validated message
-   through the production `HcsTransport` port (an in-memory topic). The `HcsRef` comes only from the consensus receipt,
-   and the contract is called only after it (ADR D11).
-2. **Contract** records the issuance or revocation.
-3. **Mirror Node** (fake) serves the topic messages and the **real** receipt logs at their block time; `statusOf` is
-   relayed to the Hardhat node.
-4. **Verifier** is `auditCredential` / `auditHcsMessage` (#10), exactly as the public verifier and issuer console use it.
-
-Scenarios: issuance and revocation with consistent evidence; failed HCS publication never reaches the contract; a
-published message by a stranger is never registered (HCS is evidence, not validity); Mirror lag reported as
-`pending_index`, then `consistent`; an `HcsRef` pointing at different content is `inconsistent`; replays and
-unauthorized revocations change nothing; admin revocation.
-
-### Frontend
-
-Components render reports produced by the **real** `checkHederaHealth` against the fake network
-(`HEALTH_SCENARIOS`), so a change in the SDK's report shape breaks the dashboard tests too. The dashboard page and API
-routes run end to end with `process.env` and `fetch` stubbed; the setup file blanks every `HEDERA_*` variable first, so
-a developer's shell never leaks into a test. The wallet panel is driven by a scripted EIP-1193 provider (no wallet,
-connect, rejection `4001`, pending `-32002`, wrong chain, unknown chain `4902`, account lookup states).
-
-The issuer console (#12) and the public verifier add their tests here when they land, using the same fixtures.
-
-## Shared fixtures: `@sh/sdk/testing`
-
-Test-only (`packages/sdk/testing`); the package root does not export it and ESLint forbids importing it from runtime
-SDK code.
-
-| Module           | Provides                                                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `credentials.ts` | throwaway signers, `makeCredentialEvent`, `makeRevocation`, `signIssuance`/`signRevocation`, Mirror-shaped `issuedLog`/`revokedLog`, `consistentWorld` |
-| `mirror.ts`      | `FakeWorld` + `fakeFetch` (topics/messages, contracts/results/logs, `eth_call`, indexing lag, forced HTTP failures, offline), `virtualClock`, `auditContext` |
-| `hcs.ts`         | `createInMemoryTopic`: an `HcsTransport` that sequences messages, reports the transaction id first, can fail, and feeds the fake Mirror Node      |
-| `network.ts`     | `fakeHederaNetwork` (Mirror + relay for `checkHederaHealth`), `healthEnv`, `healthReport`, `HEALTH_SCENARIOS`                                    |
-| `testnet.ts`     | `fakeTestnet` + `testnetEnv`: a JSON-RPC relay backed by an in-memory `CredentialRegistry` (generated ABI; its checks, custom errors and events), signed transactions decoded and executed, wired to the in-memory topic, the fake Mirror Node and a virtual clock. Drives `yarn verify:testnet` end to end offline |
-
-Settlement-side fixtures (`hedera/hcs/test-fixtures.ts`, `hedera/hts/test-fixtures.ts`, `hedera/oracle/test-fixtures.ts`)
-stay next to their modules until the `SettlementRouter` flow needs them across packages; move them here then.
-
-## Coverage targets
-
-Enforced by `yarn coverage` (Vitest thresholds for the SDK and frontend, `scripts/check-coverage.mjs` for the
-contracts). A drop below target fails the command; raise a target when coverage rises, never lower it to merge.
-
-| Scope                                    | Lines | Statements | Functions | Branches | Measured (#13) |
-| ---------------------------------------- | ----- | ---------- | --------- | -------- | --------------------------------- |
-| Contracts (`CredentialRegistry`)         | 100%  | 100%       | 100%      | 95%      | 100 / 100 / 100 / 100             |
-| SDK (`hedera/**`, `cli/**`)              | 90%   | 90%        | 90%       | 85%      | 94.7 / 94.7 / 94.0 / 89.0         |
-| Frontend (`packages/nextjs/app/**`)      | 90%   | 90%        | 90%       | 85%      | 99.8 / 99.8 / 100 / 93.0          |
-
-Security-relevant code (signature checks, replay/idempotency, access control, HTS response codes) is held to its
-own bar regardless of the totals: every revert and every rejected input must have a named test.
+| Area | File | What it proves |
+| --- | --- | --- |
+| Issuer on the VDR | `certificates/certificates.test.ts` | schema, credential definition and revocation registry resolve from Hedera for any agent; initialization is idempotent; no issuance before initialization; invalid input rejected before any write |
+| Document binding | `certificates.test.ts` | the PDF stored on HCS-1 is byte-identical; its hash is the credential's `document_sha256` |
+| Enrollment (Platform B) | `certificates.test.ts` | grade 88 → ENROLLED revealing only `course`; the proof contains no name, student id, grade or document hash; grade 68 → no proof possible; PDF copy without a credential → DENIED; copied credential JSON cannot be stored without the link secret; a proof against another time's revocation state is rejected |
+| Revocation and history | `certificates.test.ts` | after revocation: DENIED now, ENROLLED as of before; document check reports MATCH with the credential revoked; the PDF stays available; one HCS entry per change; revoking twice is a no-op |
+| Accreditation | `certificates.test.ts`, `certificates/accreditation.test.ts` | no accredited issuer → no request; a valid credential stops qualifying after its issuer is withdrawn and still qualifies as of before; Mirror Node `contracts/call` encoding and decoding against the generated ABI; read failures typed |
+| Contract | `packages/hardhat/test/AccreditationRegistry.test.ts` | authority-only writes, empty values, accredit/withdraw history, no re-accreditation, ordered listing, generated ABI and bytecode up to date |
+| Downloaded document | `certificates.test.ts` | exact PDF → MATCH; one flipped byte → MISMATCH while the credential still verifies |
+| HCS-1 codec | `certificates/hcs1.test.ts` | round trip with several chunks in any order; missing, duplicated, malformed, tampered chunks; wrong memo; no data URI; Mirror pagination; unavailable chunk; admin key; unknown topic; bad id; Mirror Node down or failing |
+| PDF and attributes | `certificates/document.test.ts` | deterministic bytes; depends on the certificate id; small enough for HCS-1; AnonCreds attribute encoding; input validation; operator key normalization (raw hex ECDSA/ED25519 → DER) |
+| Environment | `hedera/environment.test.ts`, `hedera/networks.test.ts` | network, account, key, balance, Mirror Node failures, curve detection, no secret in any result or report |
+| CLI | `cli/setup.test.ts` | exit codes, JSON output, published issuer or the next command |
+| API boundary | `nextjs/app/api/_lib/server.test.ts` | typed errors → HTTP status; unexpected errors never leak their text; holder allow-list |
+| Console | `nextjs/app/_components/PlatformPanel.test.tsx`, `app/_lib/api.test.ts` | what Platform B asked for, received and never received; denial without a proof; historical query in UTC seconds; client error mapping |
 
 ## Commands
 
-| Command                                   | Runs                                                                 |
-| ----------------------------------------- | -------------------------------------------------------------------- |
-| `yarn test`                               | SDK, contract + integration, frontend (offline)                      |
-| `yarn check`                              | lint + types + test (what CI runs)                                   |
-| `yarn coverage`                           | the same suites with coverage, failing below the targets             |
-| `yarn sdk:test` / `hardhat:test` / `next:test` | one package                                                     |
-| `yarn workspace @sh/sdk test:integration` | opt-in live Testnet tests (need the variables each file documents)   |
-| `yarn verify:testnet`                     | opt-in live end-to-end credential validation on Testnet; writes evidence ([testnet-validation.md](testnet-validation.md)) |
-
-CI (#14) runs `yarn check` and `yarn coverage` with no secrets; the live tests stay manual.
+```bash
+yarn test                         # every workspace
+yarn workspace @sh/sdk test       # SDK only (about a minute: Credo creates real credential definitions)
+yarn hardhat:test                 # the contract on the in-process Hardhat network
+yarn coverage                     # with coverage
+```

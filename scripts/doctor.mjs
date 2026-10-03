@@ -37,6 +37,8 @@ try {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
+    // Windows resolves `yarn` to `yarn.cmd`, which is only found through a shell.
+    shell: process.platform === "win32",
   }).trim();
   ok(`Yarn ${yarn}`);
 } catch {

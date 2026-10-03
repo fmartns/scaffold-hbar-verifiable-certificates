@@ -13,7 +13,7 @@ export function formatEnvironmentReport(result: EnvironmentValidation): string[]
   const lines: string[] = [];
   if (result.ok) {
     lines.push("Hedera environment is valid.");
-    lines.push(`  Network:  ${result.network} (chain ID ${result.chainId})`);
+    lines.push(`  Network:  ${result.network}`);
     lines.push(`  Account:  ${result.accountId}`);
     lines.push(`  Balance:  ${result.balance.hbar} HBAR (minimum ${result.minimumBalance.hbar} HBAR)`);
     lines.push(`  Key:      ${result.keyVerified ? "matches the account" : "not verified against the account"}`);

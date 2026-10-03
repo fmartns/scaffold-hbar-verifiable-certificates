@@ -19,7 +19,7 @@
 | `types` | — | `yarn check-types` |
 | `tests` | — | `yarn test` (whatever the test suite of #13 contains) |
 | `build` | GATE-17 | `yarn build` |
-| `boot` | GATE-18 | `yarn serve` does not answer within 90 s, or `/`, `/dashboard` or `/api/env/status` does not return 200 (the API must also return JSON) |
+| `boot` | GATE-18 | `yarn serve` does not answer within 90 s, or `/` or `/api/health` does not return 200 (the API must also return JSON). Both work without a `.env` |
 
 Requirements that depend on a failed one (`lint`, `types`, `tests`, `build` on `install`; `boot` on `build`) are reported as `BLOCKED`, not run. All other requirements always run, so one execution lists every failure.
 

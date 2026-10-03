@@ -11,7 +11,7 @@ const utc = (seconds: number) => new Date(seconds * 1000).toISOString().replace(
 
 function DecisionCard({ title, decision }: { title: string; decision: Decision }) {
   const request = decision.request;
-  const asOf = request.non_revoked?.to;
+  const asOf = request?.non_revoked?.to;
   const revealed = decision.verification?.revealed ?? {};
   return (
     <article className={styles.card} aria-label={title}>
@@ -21,23 +21,28 @@ function DecisionCard({ title, decision }: { title: string; decision: Decision }
         </span>{" "}
         {title}
       </header>
-      <p className={styles.muted}>Platform B asked for:</p>
-      <ul>
-        {Object.values(request.requested_attributes).map(attribute => (
-          <li key={attribute.name}>
-            <code>{attribute.name}</code> revealed
-          </li>
-        ))}
-        {Object.values(request.requested_predicates).map(predicate => (
-          <li key={predicate.name}>
-            <code>
-              {predicate.name} {predicate.p_type} {predicate.p_value}
-            </code>{" "}
-            proven without the value
-          </li>
-        ))}
-        {asOf !== undefined && <li>not revoked at {utc(asOf)} (Hedera consensus time)</li>}
-      </ul>
+      {request && (
+        <>
+          <p className={styles.muted}>Platform B asked for:</p>
+          <ul>
+            {Object.values(request.requested_attributes).map(attribute => (
+              <li key={attribute.name}>
+                <code>{attribute.name}</code> revealed
+              </li>
+            ))}
+            {Object.values(request.requested_predicates).map(predicate => (
+              <li key={predicate.name}>
+                <code>
+                  {predicate.name} {predicate.p_type} {predicate.p_value}
+                </code>{" "}
+                proven without the value
+              </li>
+            ))}
+            {asOf !== undefined && <li>not revoked at {utc(asOf)} (Hedera consensus time)</li>}
+            <li>issued under a credential definition the accreditation registry lists for the course</li>
+          </ul>
+        </>
+      )}
       {decision.verification ? (
         <>
           <p className={styles.muted}>Platform B received:</p>
@@ -57,6 +62,13 @@ function DecisionCard({ title, decision }: { title: string; decision: Decision }
             Never shared: {NEVER_SHARED.filter(name => !(name in revealed)).join(", ")}. Schema, credential definition
             and revocation state were read from Hedera, not from the issuer.
           </p>
+          {decision.accreditation && (
+            <p className={styles.muted}>
+              Accreditation registry: the credential definition was{" "}
+              <strong>{decision.accreditation.accredited ? "accredited" : "not accredited"}</strong> for the course at
+              that time.
+            </p>
+          )}
         </>
       ) : (
         <p className={styles.muted}>No proof was presented.</p>

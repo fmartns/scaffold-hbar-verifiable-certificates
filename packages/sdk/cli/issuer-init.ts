@@ -1,33 +1,42 @@
 /**
  * `yarn issuer:init`: publishes the issuer on Hedera once — its `did:hedera`, the CourseCompletion schema, a revocable
- * credential definition and a revocation registry. Shows the plan and cost and asks before paying (`--yes` skips the
+ * credential definition and a revocation registry — then deploys the accreditation registry contract and accredits
+ * that credential definition for the prerequisite course. Shows the plan and cost and asks before paying (`--yes` skips the
  * question). Idempotent: an issuer already published on the selected network costs nothing. Refuses mainnet without
  * `--allow-mainnet`.
  */
 import { createInterface } from "node:readline/promises";
 import { CertificateService, loadCertificatesConfig } from "../certificates";
-import type { CertificatesConfig, IssuerRecord } from "../certificates";
+import type { AccreditationRecord, CertificatesConfig, IssuerRecord } from "../certificates";
 import type { EnvironmentVariables } from "../hedera/environment";
 import { isEntryPoint, loadRootEnv } from "./env";
 
 export interface IssuerInitDependencies {
   loadConfig?: (env: EnvironmentVariables) => Promise<CertificatesConfig>;
-  createService?: (config: CertificatesConfig) => Pick<CertificateService, "store" | "initializeIssuer" | "shutdown">;
+  createService?: (config: CertificatesConfig) => Pick<CertificateService, "store" | "initialize" | "shutdown">;
   confirm?: (question: string) => Promise<boolean>;
   print?: (line: string) => void;
 }
 
-/** Measured on Testnet on 2026-10-03: 5 topics and about 12 messages, 1.27 ℏ ≈ US$ 0.13 at the network rate. */
+/**
+ * Measured on Testnet on 2026-10-03 at US$ 0.1012/ℏ: 5 topics and 12 messages ≈ 1.2 ℏ; the contract creation ≈ 10.5 ℏ
+ * (Hedera's ContractCreate fee, about US$ 1, dominates); the accreditation call ≈ 0.16 ℏ.
+ */
 const PLAN = [
   "Publishes on Hedera (HCS), paid by the operator account:",
   "  1. did:hedera of the issuer (a topic holding the DID document)",
   "  2. CourseCompletion schema (HCS-1 file)",
   "  3. Revocable credential definition (HCS-1 file)",
   "  4. Revocation registry definition (HCS-1 file) and its entries topic (the state verifiers rebuild)",
-  "Estimated cost: about 1.3 HBAR on Testnet (≈ US$ 0.13; topic creation dominates).",
+  "  5. AccreditationRegistry contract (Smart Contract Service), accrediting that credential definition for the course",
+  "Estimated cost: about 12 HBAR on Testnet (≈ US$ 1.20; the contract creation fee is about US$ 1 of it).",
 ];
 
-function describe(record: IssuerRecord, config: CertificatesConfig): string[] {
+function describe(
+  record: IssuerRecord,
+  accreditation: AccreditationRecord | null,
+  config: CertificatesConfig,
+): string[] {
   const topic = (id: string) => `${config.hashscanUrl}/topic/${id}`;
   return [
     `Issuer DID:              ${record.issuerDid}`,
@@ -36,6 +45,11 @@ function describe(record: IssuerRecord, config: CertificatesConfig): string[] {
     `Revocation registry:     ${record.revocationRegistryId}`,
     `Revocation entries:      ${topic(record.revocationEntriesTopicId)}`,
     `DID document topic:      ${topic(record.issuerDid.split("_").pop() ?? "")}`,
+    ...(accreditation
+      ? [
+          `Accreditation registry:  ${config.hashscanUrl}/contract/${accreditation.contractId} (${accreditation.course})`,
+        ]
+      : []),
   ];
 }
 
@@ -68,10 +82,10 @@ export async function runIssuerInit(
   }
   const service = createService(config);
   try {
-    const existing = await service.store.readIssuer();
-    if (existing?.network === config.network) {
+    const [existing, accredited] = await Promise.all([service.store.readIssuer(), service.store.readAccreditation()]);
+    if (existing?.network === config.network && accredited?.network === config.network) {
       print(`The issuer is already published on ${config.network} (nothing to pay):`);
-      describe(existing, config).forEach(line => print(line));
+      describe(existing, accredited, config).forEach(line => print(line));
       return 0;
     }
 
@@ -81,9 +95,9 @@ export async function runIssuerInit(
       return 1;
     }
     print("Publishing… (about a minute: every step waits for consensus and the Mirror Node)");
-    const record = await service.initializeIssuer();
+    const { issuer, accreditation } = await service.initialize();
     print("Issuer published:");
-    describe(record, config).forEach(line => print(line));
+    describe(issuer, accreditation, config).forEach(line => print(line));
     print("Next: yarn dev, then open http://localhost:3000");
     return 0;
   } finally {

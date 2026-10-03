@@ -3,6 +3,7 @@
  *
  * - `issuer.json`: the public identifiers the issuer published on Hedera (DID, schema, credential definition,
  *   revocation registry) and the next free revocation index.
+ * - `accreditation.json`: the accreditation registry contract and the accreditation granted to the demo issuer.
  * - `certificates.json`: the issuer's register of what it issued. It holds no grade or student id (those exist only in
  *   the holder's credential) and it is never the source of validity: that is the revocation state on Hedera.
  */
@@ -42,6 +43,21 @@ export interface CertificateRecord {
   revokedAt?: string;
 }
 
+/** The accreditation registry deployed by `yarn issuer:init` and the accreditation it granted to the demo issuer. */
+export interface AccreditationRecord {
+  network: string;
+  contractId: string;
+  evmAddress: string;
+  /** Account that deployed the registry: its accreditation authority. */
+  authorityAccountId: string;
+  course: string;
+  credentialDefinitionId: string;
+  accreditedAt: string;
+  accreditTransactionId: string;
+  withdrawnAt?: string;
+  withdrawTransactionId?: string;
+}
+
 export class CertificateStore {
   constructor(private readonly directory: string) {}
 
@@ -68,6 +84,14 @@ export class CertificateStore {
 
   writeIssuer(record: IssuerRecord): Promise<void> {
     return this.write("issuer.json", record);
+  }
+
+  readAccreditation(): Promise<AccreditationRecord | null> {
+    return this.read<AccreditationRecord | null>("accreditation.json", null);
+  }
+
+  writeAccreditation(record: AccreditationRecord): Promise<void> {
+    return this.write("accreditation.json", record);
   }
 
   listCertificates(): Promise<CertificateRecord[]> {

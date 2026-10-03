@@ -33,9 +33,8 @@ The deterministic tiers run without an agent through `hedera-harness validate`, 
    ([scaffold-compat.md](scaffold-compat.md) §1, step 5), so a developer who scaffolds this template can extend it with
    `npx hedera-harness run` and the same invariants guard the agent's work. `scripts/verify-scaffold.mjs` proves the
    recipe passes in a freshly generated project.
-3. **It already found a real defect.** The first `yarn harness:validate` on a clean tree failed at `check-types`:
-   the Hardhat tests import typechain types that only `hardhat compile` generates, so `yarn check` failed on a fresh
-   clone. `hardhat:check-types` now compiles first.
+3. **It already found a real defect.** The first `yarn harness:validate` on a clean tree failed at `check-types`,
+   because a generated artifact was missing on a fresh clone. The gate exists to catch exactly that.
 4. **Cost is negligible.** One devDependency (its only runtime dependency is `yaml`); no agent, browser, credentials or
    HBAR needed for the tiers in use.
 
@@ -46,10 +45,10 @@ The deterministic tiers run without an agent through `hedera-harness validate`, 
 | Validator | Checks | Requirement it protects |
 |---|---|---|
 | `spec.yaml` · `forbiddenFiles` / `secretScan.failOnFiles` | no `.env` at the root or in any workspace | GATE-19 |
-| `spec.yaml` · `secretScan.patterns` | no hex/DER private key assigned to `*PRIVATE_KEY`/`*OPERATOR_KEY`; no literal `ORACLE_API_KEY` value; no `NEXT_PUBLIC_` variable named like a key, mnemonic or secret | GATE-19, `AGENTS.md` (secrets never use `NEXT_PUBLIC_`) |
-| `static.json` · `jsonAssertions` | Yarn 3.2.3, `engines.node >=20.18.3`, MIT, the three workspaces and their `@sh/*` names, the `check` and `harness:validate` scripts | GATE-03, 07, 08; [scaffold-compat.md](scaffold-compat.md) naming contract |
-| `static.json` · `fileAssertions` | `README.md`, `AGENTS.md`, `LICENSE`, `.env.example`, lockfile, pinned Yarn release, the ADR, the single-source SDK modules (`networks.ts`, `environment.ts`, `health.ts`, `hcs`, `hts`, `oracle`, `audit`); no `packages/foundry`, `package-lock.json` or `pnpm-lock.yaml` | GATE-04, 10, 11; `AGENTS.md` single-source rules |
-| `static.json` · `textAssertions` | README and `AGENTS.md` still document the commands and normative rules; `.gitignore` covers `.env` and harness runtime; `.env.example` keeps the Hedera keys | RUB-02, GATE-19 |
+| `spec.yaml` · `secretScan.patterns` | no hex/DER private key assigned to `*PRIVATE_KEY`/`*OPERATOR_KEY`; no `NEXT_PUBLIC_` variable named like a key, mnemonic or secret | GATE-19, `AGENTS.md` (secrets never use `NEXT_PUBLIC_`) |
+| `static.json` · `jsonAssertions` | Yarn 3.2.3, `engines.node >=20.19.0`, MIT, the three workspaces and their `@sh/*` names, the `check`, `harness:validate`, `issuer:init` and `codegen` scripts | GATE-03, 07, 08; [scaffold-compat.md](scaffold-compat.md) naming contract |
+| `static.json` · `fileAssertions` | `README.md`, `AGENTS.md`, `LICENSE`, `.env.example`, lockfile, pinned Yarn release, the registrar patch, the architecture document, the contract and its generated ABI, the single-source SDK modules (`networks.ts`, `environment.ts`, `certificates/agents.ts`, `hcs1.ts`, `issuer.ts`, `presentation.ts`, `platform.ts`, `accreditation.ts`, `testing/hedera.ts`); no `.data`, `packages/foundry`, `package-lock.json` or `pnpm-lock.yaml` | GATE-04, 10, 11; `AGENTS.md` single-source rules |
+| `static.json` · `textAssertions` | README and `AGENTS.md` still document the commands and normative rules; `.gitignore` covers `.env`, `.data/` and harness runtime; `.env.example` keeps the Hedera keys | RUB-02, GATE-19 |
 | `yarn.json` | `yarn install --immutable`, `yarn lint`, `yarn check-types`, `yarn test`, `yarn build` — one command per requirement | GATE-15, 16, 17 |
 
 `template.json` is deliberately **not** asserted: the CLI deletes it in a generated project, and the recipe must pass
@@ -75,15 +74,15 @@ npx hedera-harness doctor   # needs an authenticated agent CLI (Cursor `agent` o
 npx hedera-harness run      # works on a harness/run-* branch; never pushes or merges
 ```
 
-The PRD lists what must be preserved (single-source modules, ADR-001 settlement guarantees, routes that render without
-a `.env`). `run` requires a clean git tree and no `.env` in the workspace; it never reads `.env` and never writes
+The PRD lists what must be preserved (single-source modules, the trust and privacy guarantees of architecture.md, the
+routes). `run` requires a clean git tree and no `.env` in the workspace; it never reads `.env` and never writes
 credentials. Run artifacts go to `.harness/runs/` (git-ignored).
 
 ## What is deliberately not enabled
 
 - **Tier 2 (Playwright gate).** It needs the `playwright` package and a browser, and its check — the app boots and
-  `/`, `/dashboard`, `GET /api/env/status` answer — is the self-check's job (#14, GATE-18). Enabling it is one file
-  (`validators.playwright`) if #14 decides to delegate route checks to the harness.
+  `/` and `GET /api/health` answer — is the self-check's job (GATE-18). Enabling it is one file
+  (`validators.playwright`) if route checks move to the harness.
 - **Tier 3 (acceptance contract).** It grades with an agent session: non-deterministic, needs agent credentials, and
   cannot run in CI. A template has no single feature to grade; the feature belongs to whoever writes the PRD.
 - **Tier 3.5 (chain validation).** It injects an ephemeral ECDSA key as the browser burner wallet and spends Testnet

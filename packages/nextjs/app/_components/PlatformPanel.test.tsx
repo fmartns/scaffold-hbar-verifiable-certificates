@@ -12,6 +12,7 @@ const state: ConsoleState = {
   mirrorNodeUrl: "https://testnet.mirrornode.hedera.com",
   issuerName: "Hedera Academy",
   issuer: { credentialDefinitionId: "cd" } as ConsoleState["issuer"],
+  accreditation: null,
   holders: ["ana", "bob"],
   policy: { offering: "Advanced Solidity", prerequisite: "Solidity Basics", minimumGrade: 70 },
   certificates: [],
@@ -70,5 +71,34 @@ describe("PlatformPanel", () => {
     fireEvent.change(screen.getByLabelText(/Was it valid at/), { target: { value: "2026-10-03T03:22:52" } });
     fireEvent.click(screen.getByRole("button", { name: "Check ana at that time" }));
     await waitFor(() => expect(enroll).toHaveBeenCalledWith("ana", 1790997772));
+  });
+
+  it("explains a denial when no issuer is accredited, without a proof request", async () => {
+    enroll.mockResolvedValueOnce({
+      approved: false,
+      reasons: ['No issuer has ever been accredited for "Solidity Basics".'],
+    });
+    render(<PlatformPanel state={state} run={run} />);
+    fireEvent.click(screen.getByRole("button", { name: "ana applies" }));
+    await waitFor(() => expect(screen.getByText(/No issuer has ever been accredited/)).toBeTruthy());
+    expect(screen.queryByText("Platform B asked for:")).toBeNull();
+  });
+
+  it("shows the accreditation registry's answer", async () => {
+    enroll.mockResolvedValueOnce({
+      approved: false,
+      reasons: ["The certificate's issuer was not accredited for Solidity Basics at 2026-10-03T03:22:52.000Z."],
+      request,
+      verification: {
+        verified: true,
+        revealed: { course: "Solidity Basics" },
+        predicates: ["grade >= 70"],
+        resolved: [],
+      },
+      accreditation: { credentialDefinitionId: "cd", accredited: false },
+    });
+    render(<PlatformPanel state={state} run={run} />);
+    fireEvent.click(screen.getByRole("button", { name: "ana applies" }));
+    await waitFor(() => expect(screen.getByText("not accredited")).toBeTruthy());
   });
 });

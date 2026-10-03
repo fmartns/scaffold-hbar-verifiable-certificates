@@ -32,18 +32,22 @@ export interface RequestedPredicate {
 }
 
 /**
- * A proof request restricted to one credential definition, asking for non-revocation exactly at `asOf` (Unix seconds).
- * `from = to = asOf` matters: an open interval would let a revoked holder prove with an older revocation state.
+ * A proof request restricted to trusted credential definitions (any of them), asking for non-revocation exactly at
+ * `asOf` (Unix seconds). `from = to = asOf` matters: an open interval would let a revoked holder prove with an older
+ * revocation state.
  */
 export function buildProofRequest(options: {
   name: string;
-  credentialDefinitionId: string;
+  credentialDefinitionIds: string[];
   reveal: RequestedAttribute[];
   predicates?: RequestedPredicate[];
   asOf: number;
   nonce: string;
 }): AnonCredsProofRequest {
-  const restrictions = [{ cred_def_id: options.credentialDefinitionId }];
+  if (options.credentialDefinitionIds.length === 0) {
+    throw new CertificateError("INVALID_INPUT", "A proof request needs at least one trusted credential definition.");
+  }
+  const restrictions = options.credentialDefinitionIds.map(id => ({ cred_def_id: id }));
   return {
     name: options.name,
     version: "1.0",

@@ -65,7 +65,7 @@ run(
     "--frontend",
     "nextjs-app",
     "--solidity-framework",
-    "hardhat",
+    "none",
     "--package-manager",
     "yarn",
     "--network",
@@ -81,14 +81,14 @@ const exists = p => existsSync(path.join(dir, p));
 const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
 for (const p of ["hardhat", "nextjs", "sdk"]) expect(exists(`packages/${p}/package.json`), `packages/${p} present`);
 expect(!exists("packages/foundry"), "packages/foundry absent");
-expect(exists("packages/hardhat/node_modules") && exists("packages/nextjs/node_modules"), "dependencies installed");
+expect(exists("packages/hardhat/node_modules") && exists("packages/sdk/node_modules") && exists("packages/nextjs/node_modules"), "dependencies installed");
 expect(exists(".yarn/releases") && exists("yarn.lock"), "pinned Yarn release and lockfile preserved");
 expect(
   exists(".env.example") && exists(".gitignore") && exists("AGENTS.md") && exists("README.md"),
   "root metadata files preserved",
 );
 expect(!exists("template.json"), "template.json consumed and removed by the CLI (expected)");
-expect(pkg.engines?.node === ">=20.18.3", `engines.node is ${pkg.engines?.node}`);
+expect(pkg.engines?.node === ">=20.19.0", `engines.node is ${pkg.engines?.node}`);
 const ws = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages;
 expect(
   ["packages/hardhat", "packages/nextjs", "packages/sdk"].every(w => ws?.includes(w)),
@@ -107,7 +107,6 @@ step("Run yarn setup without credentials: it must fail cleanly and never print s
     "HEDERA_NETWORK",
     "HEDERA_OPERATOR_ID",
     "HEDERA_OPERATOR_KEY",
-    "HEDERA_RPC_URL",
     "HEDERA_MIRROR_NODE_URL",
   ])
     delete clean[name];

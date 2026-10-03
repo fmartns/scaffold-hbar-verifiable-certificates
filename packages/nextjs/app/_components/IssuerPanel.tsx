@@ -22,7 +22,7 @@ export function IssuerPanel({
     course: state.policy.prerequisite,
     grade: 88,
   });
-  const issuer = state.issuer;
+  const { issuer, accreditation } = state;
 
   const issue = (event: FormEvent) => {
     event.preventDefault();
@@ -51,13 +51,36 @@ export function IssuerPanel({
             </a>{" "}
             — the state verifiers rebuild
           </dd>
+          {accreditation && (
+            <>
+              <dt>Accreditation</dt>
+              <dd>
+                <a href={`${state.hashscanUrl}/contract/${accreditation.contractId}`} target="_blank" rel="noreferrer">
+                  registry {accreditation.contractId}
+                </a>
+                : {accreditation.withdrawnAt ? "withdrawn" : "accredited"} for “{accreditation.course}”{" "}
+                <span className={accreditation.withdrawnAt ? styles.bad : styles.good}>
+                  {accreditation.withdrawnAt ? "withdrawn" : "active"}
+                </span>{" "}
+                {!accreditation.withdrawnAt && (
+                  <button
+                    type="button"
+                    className={styles.danger}
+                    onClick={() => run("The authority withdraws the accreditation", api.withdrawAccreditation)}
+                  >
+                    Withdraw (authority)
+                  </button>
+                )}
+              </dd>
+            </>
+          )}
         </dl>
       ) : (
         <div className={styles.callout}>
           <p>The issuer is not published on {state.network} yet.</p>
           <button
             type="button"
-            onClick={() => run("Publishing the issuer on Hedera (about a minute)", api.initializeIssuer)}
+            onClick={() => run("Publishing the issuer and the accreditation registry on Hedera", api.initialize)}
           >
             Publish issuer on Hedera
           </button>

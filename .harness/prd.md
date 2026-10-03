@@ -2,47 +2,46 @@
 
 ## Goal
 
-Extend this verifiable-settlement project with one feature, using
+Extend this verifiable-certificates project with one feature, using
 `hedera-harness run`. Do **not** rebuild the app, replace its architecture or
 re-implement a module that already exists.
 
 ## Who it is for
 
-Developers who scaffolded this template and add their own use case on top of
-it: a settlement policy, an oracle provider, a console page, an audit view.
+Developers who scaffolded this template and add their own certificate use case
+on top of it: another credential schema, another relying-party rule, a holder
+wallet, a different document layout.
 
 ## Existing app (preserve)
 
-Read `AGENTS.md` and `docs/architecture.md` (ADR-001, and ADR-002 for
-credentials) first; they are normative. In particular:
+Read `AGENTS.md` and `docs/architecture.md` first; they are normative. In
+particular:
 
-- Packages: `packages/hardhat` (contracts, deploy, tests), `packages/nextjs`
-  (developer console), `packages/sdk` (Hedera, oracle and Mirror Node adapters,
-  network configuration).
+- Packages: `packages/hardhat` (`AccreditationRegistry` and its tests), `packages/sdk` (Credo agents, the Hedera Verifiable Data Registry,
+  HCS-1 documents, issuer, presentations, Platform B, CLIs) and
+  `packages/nextjs` (console, public certificate page, route handlers).
 - Single-source modules — import them, never write a second version:
-  `validateHederaEnvironment` (environment), `packages/sdk/hedera/hcs`
-  (evidence envelope and publisher), `packages/sdk/hedera/hts` (the only HTS
-  caller), `packages/sdk/hedera/oracle` (oracle interface and mock),
-  `packages/sdk/hedera/audit` (credential audit), `checkHederaHealth`
-  (infrastructure health), `packages/sdk/hedera/networks.ts` (every chain id
-  and RPC/Mirror/HashScan URL).
-- Settlement guarantees: the idempotency key is `eventKey`, never a payload
-  hash, signature or nonce; `externalEventId` is a pure function of the event's
-  identifying fields; HCS is evidence, not validity; the attestation is
-  published to HCS and its receipt captured before settlement; every HTS
-  response code other than `SUCCESS` (22) reverts; no role may settle, mint or
-  alter a processed record.
-- Credential privacy (ADR-002): personal data and the subject salt stay
-  off-chain; only identifiers, hashes, salted commitments, status and
-  timestamps are public; every issuance pins `submitter`.
-- Routes: `/` and `/dashboard` keep rendering, and `GET /api/env/status`
-  keeps answering, without a `.env`.
+  `validateHederaEnvironment` (environment), `packages/sdk/certificates/agents.ts`
+  (agents and the `HederaVdrRegistry` timestamp fix),
+  `packages/sdk/certificates/hcs1.ts` (the HCS-1 codec),
+  `packages/sdk/certificates/presentation.ts` (proof requests and verification),
+  `packages/sdk/hedera/networks.ts` (every Mirror Node and HashScan URL),
+  `packages/sdk/certificates/accreditation.ts` (the registry client),
+  `packages/sdk/testing/hedera.ts` (the in-memory Hedera and registry for tests).
+- Trust and privacy guarantees: validity is the AnonCreds credential checked
+  against Hedera, never the PDF or the issuer's register; verifiers resolve
+  schema, credential definition and revocation state from Hedera themselves;
+  proof requests set `non_revoked` to a single point in time; the grade, the
+  student id and the link secret never leave the holder's wallet; the PDF holds
+  only data the holder accepts to make public.
+- Routes: `/` and `/certificate/[id]` render, and the API routes under
+  `/api` answer with typed errors.
 
 ## Feature to implement
 
-Replace this section with the delta you want: the new route, contract,
-policy, provider or adapter, its inputs and outputs, and the observable
-behaviour that proves it works.
+Replace this section with the delta you want: the new schema attribute, proof
+rule, route or adapter, its inputs and outputs, and the observable behaviour
+that proves it works.
 
 ## Non-goals
 
@@ -50,13 +49,12 @@ behaviour that proves it works.
   another manager.
 - Do not add a `.env`, a private key, a mnemonic or a real account credential
   to any file; secrets never use the `NEXT_PUBLIC_` prefix.
-- Do not send Testnet or Mainnet transactions from tests; external integrations
-  use an interface, a timeout, validation and a deterministic fixture.
+- Do not send Testnet or Mainnet transactions from tests; use the in-memory
+  Hedera of `@sh/sdk/testing`.
 
 ## Acceptance (deterministic)
 
-1. New contracts ship with unit tests, a deploy script and typed frontend
-   artifacts; new SDK modules ship with tests.
+1. New SDK modules and routes ship with tests.
 2. Documentation for the feature is added or updated under `docs/`.
 3. `yarn harness:validate` passes: the static invariants and secret scan in
    `.harness/`, then `yarn install --immutable`, `yarn lint`,

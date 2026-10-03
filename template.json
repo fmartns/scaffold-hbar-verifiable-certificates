@@ -1,6 +1,6 @@
 {
-  "name": "verifiable-settlement",
-  "description": "Verifiable credentials on Hedera: issuers sign certificates, HCS records the evidence, a Solidity CredentialRegistry decides status and anyone audits it through the Mirror Node. Next.js + Hardhat + a shared TypeScript SDK.",
+  "name": "verifiable-certificates",
+  "description": "Privacy-preserving, revocable course certificates on Hedera: AnonCreds credentials (Credo, OpenWallet Foundation) with Hedera as the Verifiable Data Registry, a downloadable PDF stored on HCS-1, an accreditation registry contract, and a relying party that decides enrollment from a zero-knowledge proof. Next.js + Hardhat + a shared TypeScript SDK.",
   "create-scaffold-hbar": {
     "capabilities": {
       "frontend": [
@@ -21,11 +21,7 @@
     "envVars": [
       {
         "key": "HEDERA_NETWORK",
-        "description": "Network the app targets: testnet, mainnet or local. Defaults to testnet when empty."
-      },
-      {
-        "key": "HEDERA_RPC_URL",
-        "description": "JSON-RPC relay URL for the selected network. Empty uses the public Hashio endpoint, which is for development and testing only."
+        "description": "Network the app targets: testnet (default) or mainnet. Certificates need a public network."
       },
       {
         "key": "HEDERA_MIRROR_NODE_URL",
@@ -33,79 +29,23 @@
       },
       {
         "key": "HEDERA_OPERATOR_ID",
-        "description": "Server-side operator account ID (0.0.x) that publishes HCS messages and manages HTS. Required by yarn setup."
+        "description": "Operator account ID (0.0.x) that pays for the issuer's HCS topics and messages. Required by yarn setup."
       },
       {
         "key": "HEDERA_OPERATOR_KEY",
-        "description": "Private key of the operator account (hex). Required by yarn setup. Secret: never commit it and never expose it to the browser."
+        "description": "Private key of the operator account (DER, or raw hex: its curve is read from the account). Server-side only. Secret: never commit it and never expose it to the browser."
       },
       {
         "key": "HEDERA_MIN_BALANCE_HBAR",
         "description": "Minimum operator balance in HBAR that yarn setup requires. Empty uses the default for the selected network (20 on testnet, 10 on mainnet)."
       },
       {
-        "key": "HEDERA_HCS_TOPIC_ID",
-        "description": "ID (0.0.x) of the HCS topic that receives the credential evidence (yarn hcs:topic creates it with a submitKey equal to the operator key). Required by the issuer console, the HCS publisher and the CredentialRegistry deploy."
+        "key": "CERTIFICATES_DATA_DIR",
+        "description": "Directory for the local agent wallets (Askar), the issuer identifiers and the tails files, relative to the repository root. Empty uses .data (git-ignored)."
       },
       {
-        "key": "HEDERA_SETTLEMENT_ROUTER_ADDRESS",
-        "description": "EVM address of the deployed SettlementRouter. It binds every published attestation (EIP-712 domain) to that deployment. Required by the HCS publisher."
-      },
-      {
-        "key": "HEDERA_HCS_PUBLISH_TIMEOUT_MS",
-        "description": "Overall deadline of one HCS publish in milliseconds (1000 to 120000). Empty uses 30000."
-      },
-      {
-        "key": "HEDERA_CREDENTIAL_REGISTRY_ADDRESS",
-        "description": "EVM address of the deployed CredentialRegistry. Source of truth for credential status and the EIP-712 domain of credential evidence. Required by the credential audit."
-      },
-      {
-        "key": "HEDERA_AUDIT_POLL_TIMEOUT_MS",
-        "description": "How long the credential audit keeps polling the Mirror Node for data that is not indexed yet, in milliseconds (0 to 300000). Empty uses 20000."
-      },
-      {
-        "key": "HEDERA_HTS_TOKEN_ID",
-        "description": "ID (0.0.x) of the HTS token that represents the settled asset (not a generic ERC-20). Required by the HTS adapter."
-      },
-      {
-        "key": "HEDERA_HTS_SETTLEMENT_MODEL",
-        "description": "How a settlement credits the beneficiary: mint-transfer (ADR v1: mint the amount, then transfer it) or pool-transfer (transfer from a pre-funded treasury). Empty uses mint-transfer."
-      },
-      {
-        "key": "HEDERA_HTS_CUSTODY",
-        "description": "Who holds the token's treasury and keys: router (production, ADR v1: the SettlementRouter mints and transfers on-chain) or operator (development and Testnet only: the operator account does). Empty uses router. Refused on mainnet."
-      },
-      {
-        "key": "HEDERA_HTS_TREASURY_ID",
-        "description": "Treasury account (0.0.x) for operator custody. Empty uses the operator account."
-      },
-      {
-        "key": "DEPLOYER_PRIVATE_KEY_ENCRYPTED",
-        "description": "Reserved for an encrypted deployer keystore; no code in this template reads it yet (yarn deploy takes the key from __RUNTIME_DEPLOYER_PRIVATE_KEY in the shell). Do not fill it manually."
-      },
-      {
-        "key": "ORACLE_BASE_URL",
-        "description": "Base URL of the oracle provider."
-      },
-      {
-        "key": "ORACLE_PROVIDER",
-        "description": "Which oracle provider to use: mock (default; deterministic, no credentials, for tests/dev/CI) or a real provider name registered by issue #23. Never selects a real provider by itself."
-      },
-      {
-        "key": "ORACLE_TIMEOUT_MS",
-        "description": "Deadline of one oracle fetch, in milliseconds. Empty uses 10000."
-      },
-      {
-        "key": "ORACLE_MAX_AGE_SECONDS",
-        "description": "Oracle-side freshness precheck: an observation older than this is rejected before signing. Empty uses 300 (ADR-001 maxAge starting point)."
-      },
-      {
-        "key": "ORACLE_VALIDITY_SECONDS",
-        "description": "Default attestation lifetime from observedAt, when a caller does not specify one. Empty uses 900 (ADR-001 maxValidity starting point)."
-      },
-      {
-        "key": "ORACLE_API_KEY",
-        "description": "API key of the oracle provider, when the provider requires one."
+        "key": "CERTIFICATES_PUBLIC_URL",
+        "description": "Public origin of the app, printed in the certificate QR code and in the revocation registry's tails URL. Empty uses http://localhost:3000."
       }
     ],
     "outro": {
@@ -127,7 +67,11 @@
               "command": "{run:setup}"
             },
             {
-              "label": "Start the app",
+              "label": "Publish the issuer and the accreditation registry on Hedera (once; about 12 HBAR, asks before paying)",
+              "command": "{run:issuer:init}"
+            },
+            {
+              "label": "Start the app and open http://localhost:3000",
               "command": "{run:dev}"
             },
             {

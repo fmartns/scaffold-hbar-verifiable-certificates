@@ -1,172 +1,99 @@
 # Troubleshooting
 
-Each entry is an error reproduced on a fresh clone, with the message as it is printed and the fix. Messages never
-contain a private key; never paste one into an issue either. If a command reports something not listed here, run
-`yarn setup` first: it checks network, account, key and balance and names the variable to fix.
+Real errors met while building and running this template, with their cause and fix.
 
 ## Install and toolchain
 
-**`Usage Error: Couldn't find the node_modules state file - running an install might help (findPackageLocation)`**
+**`npm error 'node' is not recognized as an internal or external command` during `npm install` (Windows).**
+npm runs install scripts through `cmd.exe`, which did not find `node` on its `PATH` (common with nvm-windows or several
+Node installations). The template uses Yarn, which runs scripts with its own shell; use `yarn install`. If Yarn is not
+on your `PATH`, run `corepack enable`, or call the pinned release directly: `node .yarn/releases/yarn-3.2.3.cjs install`.
 
-Any `yarn <script>` on a fresh clone before the first install. Run `yarn install`. Yarn refuses scripts until then, so
-the two dependency-free scripts are called with `node` before installing: `node scripts/doctor.mjs` and
-`node scripts/self-check.mjs` (which treats the clean install as one of its requirements).
+**`@credo-ts/node` requires Node >= 20.19.** Credo is ESM-only and its Node package requires 20.19 or newer
+(`require(esm)`). Upgrade Node; the CLI and `engines` enforce it.
 
-**`FAIL  Node.js 18.x is older than the required >= 20.18.3.`** (from `yarn doctor`)
+**Install fails downloading `library-<platform>.tar.gz` or a `zstd-napi` prebuild.** The Askar, AnonCreds and zstd
+packages download prebuilt binaries from their GitHub releases during install (macOS x64/arm64, Linux x64/arm64,
+Windows x64). Behind a proxy or offline, allow `github.com` and `objects.githubusercontent.com`, then run
+`yarn install` again. Other platforms build zstd from source and need a C toolchain.
 
-Install Node.js 20.18.3 or later (CI runs 20.18.3 and 24).
-
-**`FAIL  Yarn was not found on PATH.`**
-
-Run `corepack enable`. The repository pins Yarn 3.2.3 in `.yarn/releases`; any Yarn launcher picks it up.
-
-**`warn  No .env file. Run cp .env.example .env ...`**
-
-Only a warning: tests and the app run without `.env`. Create it when you need Testnet (`cp .env.example .env`).
+**`No available zstd module found. Please install 'zstd-napi'`.** The Hiero AnonCreds registry compresses revocation
+entries with zstd, an optional dependency of the Hiero SDK. `@sh/sdk` and `@sh/nextjs` both depend on `zstd-napi`; if
+you moved code elsewhere, add it there too.
 
 ## Environment (`yarn setup`)
 
-`yarn setup` exits 0 when valid, 1 when invalid, 2 when the network is unreachable. Configuration problems are
-reported together and no request is made while any exist.
+**`HEDERA_OPERATOR_ID is not set or is empty`.** Run `cp .env.example .env` and fill in the operator. In the Next.js
+app, the root `.env` is loaded by `next.config.ts`; restart `yarn dev` after editing it.
 
-**`x [MISSING_ENV] HEDERA_OPERATOR_ID is not set or is empty.`** and the same for `HEDERA_OPERATOR_KEY`
+**A raw hex key is rejected, or Hedera answers `INVALID_SIGNATURE`.** A 32-byte hex key is valid for both ED25519 and
+ECDSA, and the Hedera SDK reads bare hex as ED25519. The template reads the curve from your account on the Mirror Node
+(`keyType` in `validateHederaEnvironment`) and converts the key to DER. If `yarn setup` reports `KEY_UNVERIFIABLE`
+(multi-key accounts), put the key in DER form (`302e…` for ED25519, `3030…` for ECDSA).
 
-There is no `.env`, or the values are empty. `cp .env.example .env`, then set both from <https://portal.hedera.com>.
-The same message appears from `yarn hcs:topic`, followed by `[CONFIG_INVALID] ... so no topic was created.`
+**`AccountBalanceQuery` fails with `max attempts of 10 was reached … BUSY`.** On 2026-10-03 every Testnet consensus node
+answered the free balance query with `BUSY` while transactions worked. `yarn setup` reads balances from the Mirror Node
+and is not affected; do the same in your own scripts.
 
-**`x [INVALID_NETWORK] HEDERA_NETWORK "devnet" is not a supported network.`**
+## Issuer and certificates
 
-Use `testnet`, `mainnet` or `local`, or leave it empty for `testnet`.
+**`Unable to register Did: Timeout of 120000ms exceeded while waiting for DID update to be visible on the network`.**
+The Hiero registrar looks for the new DID message between the start of the wait and the local time *at the start of
+the wait*. If your clock is behind consensus (one second is enough), the message is never in the window. The template
+ships a `yarn patch` that moves the window (`.yarn/patches/@hiero-did-sdk-registrar-*.patch`); if you see this error,
+check that `package.json` still has the `resolutions` entry for it, and sync your clock. The DID topic was created
+anyway (visible on HashScan) but its key stayed in the failed run's wallet; run `yarn issuer:init` again.
 
-**`x [INVALID_OPERATOR_KEY] HEDERA_OPERATOR_KEY is not a valid Hedera private key.`**
+**`Either timestamp and revocation state must be presented, or neither` when building a proof.** The Hiero AnonCreds
+registry returns revocation status lists stamped in milliseconds; AnonCreds expects seconds. `HederaVdrRegistry`
+(`packages/sdk/certificates/agents.ts`) fixes it. You get this error if an agent registers the plain
+`HederaAnonCredsRegistry` instead.
 
-The value is an account id, a public key or a mnemonic. Use the hex private key, DER-encoded (`302e…`/`3030…`) or the
-raw 32-byte hex string.
+**`Run \`yarn issuer:init\` (or Initialize issuer) first.` (HTTP 409).** The data directory has no issuer for the selected
+network. Run `yarn issuer:init`. Switching `HEDERA_NETWORK` or `CERTIFICATES_DATA_DIR` starts from an empty issuer.
 
-**`x [KEY_MISMATCH] HEDERA_OPERATOR_KEY does not belong to account 0.0.2: its public key differs from the account's key on testnet.`**
+**`The holder could not build this proof` / DENIED with "The holder has no certificate to present."** Expected for a
+grade below 70, a revoked certificate as of now, or a holder without the credential. The decision card says which.
 
-The key is valid but controls another account (or the account is on another network). Use the key created with that
-account, or set `HEDERA_OPERATOR_ID` to the account this key controls.
+**`The proof uses a revocation state from another time than requested.`** The proof was built for a different
+`non_revoked` instant than the request it was checked against. Build a fresh proof for each request.
 
-**`x [ACCOUNT_NOT_FOUND] Account 0.0.999999999 does not exist on testnet (checked https://testnet.mirrornode.hedera.com).`**
+**A revocation does not show up immediately.** Mirror Nodes index a few seconds after consensus; proofs "as of now"
+reflect the revocation once the entry is indexed.
 
-A typo, the wrong network, or a Testnet reset: Testnet is reset periodically and account ids change (keys are kept).
-Create a new account and update `HEDERA_OPERATOR_ID` and `HEDERA_OPERATOR_KEY`. After a reset, the HCS topic and the
-registry deployment are gone too: rerun `yarn hcs:topic --write` and `yarn deploy --network hederaTestnet`.
+**`INSUFFICIENT_PAYER_BALANCE` during `yarn issuer:init`.** Creating the accreditation contract costs about 10.5 HBAR
+(Hedera's contract creation fee); the whole command about 12. Top up the account at the faucet and run it again: the
+issuer half is not repeated.
 
-**`INSUFFICIENT_BALANCE`**
+**DENIED with "The certificate's issuer was not accredited …".** The accreditation authority withdrew the issuer's
+credential definition (or never accredited it) at the time asked. Withdrawal is permanent for that definition; start
+over with a fresh `CERTIFICATES_DATA_DIR` and `yarn issuer:init`.
 
-The operator holds less than `HEDERA_MIN_BALANCE_HBAR` (20 HBAR on Testnet by default). Top up at
-<https://portal.hedera.com/faucet>.
+**`… is stale: run \`yarn codegen\``** in the contract tests. The contract changed; regenerate
+`packages/sdk/generated/AccreditationRegistry.ts` and commit it.
 
-**`HEDERA_RPC_URL` or `HEDERA_MIRROR_NODE_URL` seems ignored**
+**`REGISTRY_FULL`.** A revocation registry holds `maximumCredentialNumber − 1` certificates (999). The template does
+not rotate registries; publish a new issuer on a fresh data directory, or add rotation.
 
-Both override only the network selected by `HEDERA_NETWORK`, so one override cannot silently redirect another
-network. Check `HEDERA_NETWORK` first. Browser reads always use the public relay of the network.
+**`HCS-1 chunk N is missing` or `does not match the hash in the topic memo` when downloading a PDF.** Right after an
+upload the Mirror Node may not list every chunk yet (the issuer waits for it; a reader may be faster). Retry after a
+few seconds. A persistent mismatch means the Mirror Node served different data: try another Mirror Node
+(`HEDERA_MIRROR_NODE_URL`).
 
-## Deploy
+## Next.js build
 
-**`Error: ERROR processing .../00_deploy_credential_registry.ts: TypeError: Cannot read properties of undefined (reading 'length')`**
+**`Module parse failed: Unexpected character` in `koffi/build/…/koffi.node`.** The native Askar binding was bundled.
+Server-only packages must be listed in `SERVER_EXTERNALS` in `packages/nextjs/next.config.ts` and be dependencies of
+`@sh/nextjs`: `serverExternalPackages` alone does not apply to imports made from the transpiled `@sh/sdk` workspace.
 
-`yarn deploy --network hederaTestnet` without `__RUNTIME_DEPLOYER_PRIVATE_KEY`: the live network has no account, by
-design (there is no default key). Pass it for this command only:
-`__RUNTIME_DEPLOYER_PRIVATE_KEY=0x<ecdsa-key> yarn deploy --network hederaTestnet`. Do not put it in `.env`;
-`DEPLOYER_PRIVATE_KEY_ENCRYPTED` is reserved and not read.
-
-**`Error: HEDERA_HCS_TOPIC_ID is required to deploy CredentialRegistry on hederaTestnet.`**
-
-The registry fixes its evidence topic at deploy. Create it first: `yarn hcs:topic --write`.
-
-**`ProviderError: [Request ID: …] Error occurred during transaction simulation: Sender account not found.`**
-
-The deployer key has no account on that network (never funded, wrong network, or a Testnet reset). Fund its EVM
-address or create an ECDSA account in the portal and use its key.
-
-**The dashboard says the registry was deployed for another topic**
-
-`hcsTopicNum()` differs from `HEDERA_HCS_TOPIC_ID`: the topic was recreated after the deploy, or `.env` points to an
-old topic. Restore the original topic id, or redeploy with the current one and update
-`HEDERA_CREDENTIAL_REGISTRY_ADDRESS`.
-
-**`codegen` fails in CI with stale output**
-
-A contract changed and `packages/sdk/generated` was not regenerated. Run `yarn codegen` and commit the result; never
-edit the generated files.
-
-## Issuer console and wallet
-
-The console's errors are listed by category in [issuer-console.md](issuer-console.md#errors). The ones people hit
-first:
-
-**Page shows what is missing and the forms are disabled; the API answers `503 not_configured`**
-
-The server needs `HEDERA_NETWORK`, `HEDERA_HCS_TOPIC_ID`, `HEDERA_CREDENTIAL_REGISTRY_ADDRESS` and, to publish,
-`HEDERA_OPERATOR_ID`/`HEDERA_OPERATOR_KEY`. Restart `yarn dev` after editing `.env`.
-
-**`Wrong network`: "The wallet is on chain 1, but this console targets chain 296."**
-
-The wallet is on another chain. Accept the switch the console offers (it adds Hedera Testnet if the wallet does not
-know it), or switch manually to chain 296 (295 on mainnet, 298 local).
-
-**`Wallet not connected`**
-
-No injected wallet, no connected account, or the wallet is locked. Install MetaMask (or HashPack in EVM mode), unlock
-it and click "Connect wallet".
-
-**`issuer_not_registered` (`UnknownIssuer`, `UnauthorizedSigner`, `InactiveIssuer`) or `403 issuer_not_registered`**
-
-The namespace was never registered on this deployment, the connected wallet is not its current signer, or the admin
-deactivated it. The namespace must be exactly the lowercase name that was registered (`acme-university` is not
-`acme`); uppercase is rejected by the form. Register it as in [quick-start.md](quick-start.md#5-register-the-issuer).
-
-**`ValidityWindowTooLong`**
-
-The signature window in the form is longer than the namespace's `maxValidity`. Shorten the window (default 10 minutes)
-or have the admin call `setIssuerMaxValidity`.
-
-**`Network unreachable` (`rpc_unavailable`)**
-
-The public Hashio relay rate-limits. Wait a minute and retry, or set `HEDERA_RPC_URL` to your own relay for the server.
-
-**`timeout` after publishing**
-
-The HCS message or the transaction may still have gone through. The console keeps the HCS transaction id and the
-transaction hash: check them on HashScan before retrying. Nothing is retried automatically, so nothing is published
-twice behind your back.
-
-## Mirror Node and audit
-
-**Audit says `pending_index` (`ONCHAIN_LOG_PENDING`, `HCS_PENDING_INDEX`) right after issuing**
-
-Not an error. The Mirror Node indexes a few seconds behind consensus; the audit polls for
-`HEDERA_AUDIT_POLL_TIMEOUT_MS` (default 20 s) and the console asks again. Data is reported missing only once the fact
-is older than the 60 s index budget.
-
-**Audit reports `HCS_MISSING` or `ONCHAIN_LOG_MISSING` after a minute**
-
-Check that `HEDERA_MIRROR_NODE_URL` matches `HEDERA_NETWORK`, and the dashboard's Mirror Node lag warning. A Mirror
-Node that is far behind keeps recent facts pending; a wrong one never finds them. The authoritative answer is still
-`statusOf`; the audit only explains it ([credential-audit.md](credential-audit.md)).
+**`Selector "input, select, button" is not pure` in a CSS module.** CSS modules only accept selectors with a local
+class; scope element styles (`.panel input`) or put them in `app/globals.css`.
 
 ## Self-check, CI and harness
 
-**`Secret scan could not run: gitleaks was not found (gitleaks). Install it (macOS: brew install gitleaks; ...) or set GITLEAKS_BIN.`**
+**`Secret scan could not run: gitleaks was not found`.** Install gitleaks (or set `GITLEAKS_BIN`); CI installs it.
 
-`yarn secrets:scan` and the `secrets` requirement of `yarn self-check` need gitleaks. Install it, or point
-`GITLEAKS_BIN` to the binary. CI installs a pinned, checksum-verified version. Exit code 2 means the scan could not run,
-not that it found something ([self-check.md](self-check.md)).
+**`yarn harness:validate` refuses to run.** It refuses a workspace with a `.env`, so run it in a clean clone.
 
-**`README.md:<line> cites yarn <name>, which is not a root script.`**
-
-The `docs` requirement checks every `yarn <script>` written in inline code in README.md and AGENTS.md. Add the script
-to the root `package.json` or move the mention to the "Planned" line.
-
-**`harness:validate` fails with `Forbidden file or directory exists: .env`**
-
-By design: the harness validates a clean clone and refuses a workspace with `.env` (3 findings: forbidden file, static
-validator, secret scan; every other step still runs). Run it in a fresh clone, or move `.env` away while it runs
-([harness.md](harness.md)).
-
-**`self-check` fails `manifest` in a generated project**
-
-The CLI deletes `template.json`. In a project created by `npm create scaffold-hbar`, run `yarn self-check --skip manifest`.
+**Commit hook fails with `yarn: command not found`.** The Husky pre-commit hook runs `yarn lint-staged`; make Yarn
+available on your `PATH` (`corepack enable`).

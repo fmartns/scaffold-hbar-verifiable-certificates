@@ -1,6 +1,6 @@
 {
-  "name": "verifiable-settlement-yarn",
-  "description": "Commands that must pass after any change, one per eligibility requirement so a failure names the requirement. None needs credentials, a .env or network access beyond the package registry.",
+  "name": "verifiable-certificates-yarn",
+  "description": "Commands that must pass after any change, one per eligibility requirement so a failure names the requirement. None needs credentials or a .env. Install reaches the package registry and the GitHub releases that host the prebuilt Askar, AnonCreds and zstd binaries; nothing else touches the network.",
   "requiresNoSecrets": true,
   "forbiddenCommands": ["npm install", "npm run", "pnpm install", "pnpm run"],
   "commands": [
@@ -26,13 +26,13 @@
       "name": "test",
       "command": "yarn test",
       "timeoutMs": 900000,
-      "purpose": "SDK unit tests and Hardhat contract tests (deterministic, no Testnet)."
+      "purpose": "SDK and app tests against an in-memory Hedera (deterministic, no network, no credentials)."
     },
     {
       "name": "build",
       "command": "yarn build",
       "timeoutMs": 900000,
-      "purpose": "SDK build, contract compilation and Next.js production build."
+      "purpose": "SDK type build and Next.js production build."
     }
   ]
 }

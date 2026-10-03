@@ -97,7 +97,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  align-items: end;
+  align-items: flex-end;
   margin: 0.75rem 0;
 }
 
