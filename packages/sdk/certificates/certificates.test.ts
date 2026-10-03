@@ -38,7 +38,7 @@ let anaCertificate: IssuedCertificate;
 const issueTo = (holder: Agent, holderLabel: string, holderName: string, grade: number) =>
   issueCertificate(
     { config, store, issuer, holder, holderLabel },
-    { holderName, studentId: "123456", course: ENROLLMENT_POLICY.prerequisite, grade },
+    { holderName, studentId: "SID-7f2ab91c", course: ENROLLMENT_POLICY.prerequisite, grade },
     { publishFile: hedera.publishFile },
   );
 const enroll = (holder: Agent, credentialId: string | undefined, asOf = nowSeconds()) =>
@@ -116,7 +116,7 @@ describe("Platform B enrollment in Advanced Solidity", () => {
       accredited: true,
     });
     const proof = JSON.stringify(await createPresentation(ana, anaCertificate.record.credentialId, decision.request!));
-    for (const secret of ["Ana Example", "123456", '"88"', anaCertificate.record.documentSha256]) {
+    for (const secret of ["Ana Example", "SID-7f2ab91c", '"88"', anaCertificate.record.documentSha256]) {
       expect(proof).not.toContain(secret);
     }
   });
