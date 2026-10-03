@@ -12,20 +12,28 @@
     "lint-staged": "eslint --max-warnings=0 --no-warn-ignored",
     "serve": "next start",
     "start": "next dev",
-    "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test": "vitest run"
   },
   "dependencies": {
+    "@credo-ts/anoncreds": "0.7.2",
+    "@credo-ts/askar": "0.7.2",
+    "@credo-ts/core": "0.7.2",
+    "@credo-ts/hedera": "0.7.2",
+    "@credo-ts/node": "0.7.2",
+    "@hashgraph/sdk": "^2.81.0",
+    "@hyperledger/anoncreds-nodejs": "^0.4.1",
+    "@openwallet-foundation/askar-nodejs": "^0.6.1",
     "@sh/sdk": "workspace:*",
-    "jsqr": "^1.4.0",
     "next": "^15.2.8",
+    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "server-only": "^0.0.1",
+    "zstd-napi": "^0.0.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@playwright/test": "^1.49.0",
     "@testing-library/dom": "^10",
     "@testing-library/react": "^16",
     "@types/node": "^20.19.8",
@@ -38,7 +46,6 @@
     "eslint-config-next": "^15.2.3",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.4",
-    "ethers": "^6.14.0",
     "jsdom": "^26",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",

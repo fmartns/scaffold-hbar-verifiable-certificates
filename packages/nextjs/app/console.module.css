@@ -1,0 +1,173 @@
+.main {
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  min-width: 0;
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.panel h3 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.ids {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.ids dt {
+  color: var(--muted);
+}
+
+.ids dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.form {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.form label,
+.actions label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.panel input,
+.panel select,
+.panel button {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.panel button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  justify-self: start;
+}
+
+.panel button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.panel .danger {
+  background: var(--surface);
+  color: var(--error);
+  border-color: var(--error);
+  padding: 0.2rem 0.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: end;
+  margin: 0.75rem 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.4rem 0.3rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.card header {
+  font-weight: 600;
+}
+
+.card ul {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.good,
+.bad {
+  display: inline-block;
+  font-weight: 700;
+  padding: 0 0.4rem;
+  border-radius: 4px;
+}
+
+.good {
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.bad {
+  color: var(--error);
+  background: var(--error-bg);
+}
+
+.reasons {
+  color: var(--error);
+}
+
+.callout {
+  background: var(--warn-bg);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.busy {
+  background: var(--idle-bg);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.error {
+  color: var(--error);
+  background: var(--error-bg);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}

@@ -1,4 +1,4 @@
-import { PrivateKey } from "@hiero-ledger/sdk";
+import { PrivateKey } from "@hashgraph/sdk";
 import { describe, expect, it } from "vitest";
 import { formatEnvironmentReport } from "./environment-report";
 import {
@@ -324,10 +324,23 @@ describe("success", () => {
       hashscanUrl: "https://hashscan.io/testnet/account/0.0.1234",
       mirrorNodeOrigin: "https://testnet.mirrornode.hedera.com",
       keyVerified: true,
+      keyType: "ED25519",
       warnings: [],
       checkedAt: "2026-09-18T12:00:00.000Z",
     });
     expect(net.calls).toEqual(["GET testnet.mirrornode.hedera.com/api/v1/accounts/0.0.1234"]);
+  });
+
+  it("reports the curve of a raw hex key from the account, so it can be parsed unambiguously", async () => {
+    const net = fakeNetwork({
+      testnet: { [ACCOUNT]: { balance: 100n * HBAR, key: { type: "ECDSA_SECP256K1", key: PUBLIC_KEY } } },
+    });
+    const inspectBoth: KeyInspector = async () => [
+      { type: "ED25519", publicKey: "00".repeat(32) },
+      { type: "ECDSA_SECP256K1", publicKey: PUBLIC_KEY },
+    ];
+    const result = await validateHederaEnvironment(validEnv, { fetch: net.fetch, inspectKey: inspectBoth, now });
+    expect(result).toMatchObject({ ok: true, keyVerified: true, keyType: "ECDSA_SECP256K1" });
   });
 
   it("defaults to testnet when HEDERA_NETWORK is unset", async () => {
