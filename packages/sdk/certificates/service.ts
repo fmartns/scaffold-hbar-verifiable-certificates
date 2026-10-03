@@ -5,16 +5,18 @@
  * Demo roles: `issuer` (Hedera Academy), `platform` (Platform B, the verifier) and the holders `ana` and `bob`.
  */
 import type { Agent } from "@credo-ts/core";
+import { MirrorAccreditationReader, changeAccreditation, deployAccreditationRegistry } from "./accreditation";
+import type { AccreditationReader } from "./accreditation";
 import { openAgent } from "./agents";
 import type { CertificatesConfig } from "./config";
 import { CertificateError } from "./errors";
 import { ISSUER_NAME, initializeIssuer, issueCertificate, revokeCertificate } from "./issuer";
 import type { IssueCertificateInput } from "./issuer";
-import { fetchHcs1File } from "./ledger";
+import { createLedgerClient, fetchHcs1File } from "./ledger";
 import { ENROLLMENT_POLICY, decideEnrollment, verifyDownloadedCertificate } from "./platform";
 import type { Decision, DocumentCheck } from "./platform";
 import { CertificateStore } from "./store";
-import type { CertificateRecord, IssuerRecord } from "./store";
+import type { AccreditationRecord, CertificateRecord, IssuerRecord } from "./store";
 
 export const HOLDERS = ["ana", "bob"] as const;
 export type HolderLabel = (typeof HOLDERS)[number];
@@ -77,8 +79,81 @@ export class CertificateService {
     await Promise.all(agents.map(result => (result.status === "fulfilled" ? result.value.shutdown() : undefined)));
   }
 
-  initializeIssuer(): Promise<IssuerRecord> {
-    return this.agent("issuer").then(issuer => initializeIssuer(issuer, this.store, this.config.network));
+  /**
+   * Publishes the issuer (DID, schema, credential definition, revocation registry), then deploys the accreditation
+   * registry and accredits the issuer's credential definition for the prerequisite course. In this demo the operator
+   * plays the accreditation authority too. Idempotent: each half is skipped when already done on this network.
+   */
+  async initialize(): Promise<{ issuer: IssuerRecord; accreditation: AccreditationRecord }> {
+    const issuer = await initializeIssuer(await this.agent("issuer"), this.store, this.config.network);
+    const existing = await this.store.readAccreditation();
+    if (existing?.network === this.config.network) return { issuer, accreditation: existing };
+
+    const client = createLedgerClient(this.config);
+    try {
+      const course = ENROLLMENT_POLICY.prerequisite;
+      const registry = await deployAccreditationRegistry(client);
+      const transactionId = await changeAccreditation(
+        client,
+        registry.contractId,
+        "accredit",
+        course,
+        issuer.credentialDefinitionId,
+      );
+      const reader = new MirrorAccreditationReader(this.config.mirrorNodeUrl, registry.evmAddress);
+      await waitFor(() => reader.isAccredited(course, issuer.credentialDefinitionId, Math.floor(Date.now() / 1000)));
+      const accreditation: AccreditationRecord = {
+        network: this.config.network,
+        ...registry,
+        authorityAccountId: this.config.operatorId,
+        course,
+        credentialDefinitionId: issuer.credentialDefinitionId,
+        accreditedAt: new Date().toISOString(),
+        accreditTransactionId: transactionId,
+      };
+      await this.store.writeAccreditation(accreditation);
+      return { issuer, accreditation };
+    } finally {
+      client.close();
+    }
+  }
+
+  private async accreditationRecord(): Promise<AccreditationRecord> {
+    const record = await this.store.readAccreditation();
+    if (!record || record.network !== this.config.network) {
+      throw new CertificateError("ISSUER_NOT_INITIALIZED", "Run `yarn issuer:init` first.");
+    }
+    return record;
+  }
+
+  /** Platform B's view of the accreditation registry, read through the Mirror Node. */
+  async accreditation(): Promise<AccreditationReader> {
+    const record = await this.accreditationRecord();
+    return new MirrorAccreditationReader(this.config.mirrorNodeUrl, record.evmAddress);
+  }
+
+  /** The authority withdraws the demo issuer's accreditation: valid certificates stop qualifying from now on. */
+  async withdrawAccreditation(): Promise<AccreditationRecord> {
+    const record = await this.accreditationRecord();
+    if (record.withdrawnAt) return record;
+    const client = createLedgerClient(this.config);
+    try {
+      const transactionId = await changeAccreditation(
+        client,
+        record.contractId,
+        "withdraw",
+        record.course,
+        record.credentialDefinitionId,
+      );
+      const reader = new MirrorAccreditationReader(this.config.mirrorNodeUrl, record.evmAddress);
+      const now = () => Math.floor(Date.now() / 1000);
+      await waitFor(async () => !(await reader.isAccredited(record.course, record.credentialDefinitionId, now())));
+      const withdrawn = { ...record, withdrawnAt: new Date().toISOString(), withdrawTransactionId: transactionId };
+      await this.store.writeAccreditation(withdrawn);
+      return withdrawn;
+    } finally {
+      client.close();
+    }
   }
 
   private async issuerRecord(): Promise<IssuerRecord> {
@@ -157,32 +232,39 @@ export class CertificateService {
 
   /** Platform B decides on enrollment in Advanced Solidity from `holder`'s proof, as of `asOf` (default: now). */
   async enroll(holder: HolderLabel, asOf = Math.floor(Date.now() / 1000)): Promise<Decision> {
-    const issuer = await this.issuerRecord();
-    const [holderAgent, platform] = await Promise.all([this.agent(holder), this.agent("platform")]);
-    return decideEnrollment(
-      {
-        holder: holderAgent,
-        credentialId: await this.credentialOf(holder),
-        verifier: platform,
-        trustedCredentialDefinitionId: issuer.credentialDefinitionId,
-      },
-      asOf,
-    );
+    const [holderAgent, platform, accreditation] = await Promise.all([
+      this.agent(holder),
+      this.agent("platform"),
+      this.accreditation(),
+    ]);
+    const credentialId = await this.credentialOf(holder);
+    return decideEnrollment({ holder: holderAgent, credentialId, verifier: platform, accreditation }, asOf);
   }
 
   /** Platform B checks that `file` is the document of `holder`'s certificate and that the credential is valid now. */
   async checkDocument(holder: HolderLabel, certificateId: string, file: Uint8Array): Promise<DocumentCheck> {
-    const issuer = await this.issuerRecord();
-    const [holderAgent, platform] = await Promise.all([this.agent(holder), this.agent("platform")]);
+    const [holderAgent, platform, accreditation] = await Promise.all([
+      this.agent(holder),
+      this.agent("platform"),
+      this.accreditation(),
+    ]);
+    const credentialId = await this.credentialOf(holder, certificateId);
     return verifyDownloadedCertificate(
-      {
-        holder: holderAgent,
-        credentialId: await this.credentialOf(holder, certificateId),
-        verifier: platform,
-        trustedCredentialDefinitionId: issuer.credentialDefinitionId,
-      },
+      { holder: holderAgent, credentialId, verifier: platform, accreditation },
       file,
       Math.floor(Date.now() / 1000),
     );
+  }
+}
+
+/** Polls `check` until it holds: Mirror Node state follows consensus by a few seconds. */
+async function waitFor(check: () => Promise<boolean>, timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await check().catch(() => false)) return;
+    if (Date.now() > deadline) {
+      throw new CertificateError("LEDGER_READ_FAILED", "The Mirror Node did not reflect the change in time.");
+    }
+    await new Promise(resolve => setTimeout(resolve, 1500));
   }
 }

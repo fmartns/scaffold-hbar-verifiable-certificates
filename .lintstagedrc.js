@@ -5,5 +5,6 @@ const eslintCommand = (pkg, script) => filenames =>
 
 module.exports = {
   "packages/nextjs/**/*.{ts,tsx}": [eslintCommand("nextjs", "next:lint-staged"), () => "yarn next:check-types"],
+  "packages/hardhat/**/*.ts": [eslintCommand("hardhat", "hardhat:lint-staged"), () => "yarn hardhat:check-types"],
   "packages/sdk/**/*.ts": [eslintCommand("sdk", "sdk:lint-staged"), () => "yarn sdk:check-types"],
 };

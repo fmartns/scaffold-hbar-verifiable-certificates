@@ -4,7 +4,7 @@ import path from "node:path";
 import { PrivateKey } from "@hashgraph/sdk";
 import type { Agent } from "@credo-ts/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { InMemoryHedera, importIssuerDid } from "../testing/hedera";
+import { InMemoryAccreditation, InMemoryHedera, importIssuerDid } from "../testing/hedera";
 import { openAgent } from "./agents";
 import type { CertificatesConfig } from "./config";
 import { CertificateError } from "./errors";
@@ -12,12 +12,12 @@ import { initializeIssuer, issueCertificate, revokeCertificate } from "./issuer"
 import type { IssuedCertificate } from "./issuer";
 import { fetchHcs1File } from "./ledger";
 import { ENROLLMENT_POLICY, decideEnrollment, verifyDownloadedCertificate } from "./platform";
-import { createPresentation, verifyPresentation } from "./presentation";
-import { enrollmentRequest } from "./platform";
+import { anoncredsNonce, buildProofRequest, createPresentation, verifyPresentation } from "./presentation";
 import { CertificateStore } from "./store";
 import type { IssuerRecord } from "./store";
 
 const hedera = new InMemoryHedera();
+const accreditation = new InMemoryAccreditation();
 const config: CertificatesConfig = {
   network: "testnet",
   operatorId: "0.0.2",
@@ -42,10 +42,7 @@ const issueTo = (holder: Agent, holderLabel: string, holderName: string, grade: 
     { publishFile: hedera.publishFile },
   );
 const enroll = (holder: Agent, credentialId: string | undefined, asOf = nowSeconds()) =>
-  decideEnrollment(
-    { holder, credentialId, verifier: platform, trustedCredentialDefinitionId: issuerRecord.credentialDefinitionId },
-    asOf,
-  );
+  decideEnrollment({ holder, credentialId, verifier: platform, accreditation }, asOf);
 
 beforeAll(async () => {
   hedera.install();
@@ -56,6 +53,7 @@ beforeAll(async () => {
     maximumCredentialNumber: 10,
     createDid: importIssuerDid,
   });
+  accreditation.accredit(ENROLLMENT_POLICY.prerequisite, issuerRecord.credentialDefinitionId);
   anaCertificate = await issueTo(ana, "ana", "Ana Example", 88);
 }, 120_000);
 
@@ -113,7 +111,11 @@ describe("Platform B enrollment in Advanced Solidity", () => {
     expect(decision.approved).toBe(true);
     expect(decision.verification?.revealed).toEqual({ course: "Solidity Basics" });
     expect(decision.verification?.predicates).toEqual(["grade >= 70"]);
-    const proof = JSON.stringify(await createPresentation(ana, anaCertificate.record.credentialId, decision.request));
+    expect(decision.accreditation).toEqual({
+      credentialDefinitionId: issuerRecord.credentialDefinitionId,
+      accredited: true,
+    });
+    const proof = JSON.stringify(await createPresentation(ana, anaCertificate.record.credentialId, decision.request!));
     for (const secret of ["Ana Example", "123456", '"88"', anaCertificate.record.documentSha256]) {
       expect(proof).not.toContain(secret);
     }
@@ -160,11 +162,57 @@ describe("Platform B enrollment in Advanced Solidity", () => {
   });
 
   it("rejects a proof built against a revocation state from another time than requested", async () => {
-    const earlier = enrollmentRequest(issuerRecord.credentialDefinitionId, nowSeconds() - 60);
-    const proof = await createPresentation(ana, anaCertificate.record.credentialId, earlier);
-    const now = enrollmentRequest(issuerRecord.credentialDefinitionId, nowSeconds());
-    const verification = await verifyPresentation(platform, now, proof);
+    const request = (asOf: number) =>
+      buildProofRequest({
+        name: "Enrollment",
+        credentialDefinitionIds: [issuerRecord.credentialDefinitionId],
+        reveal: [{ name: "course" }],
+        asOf,
+        nonce: anoncredsNonce(),
+      });
+    const proof = await createPresentation(ana, anaCertificate.record.credentialId, request(nowSeconds() - 60));
+    const verification = await verifyPresentation(platform, request(nowSeconds()), proof);
     expect(verification.verified).toBe(false);
+  });
+});
+
+describe("accreditation registry", () => {
+  it("denies when no issuer was ever accredited for the course", async () => {
+    const decision = await decideEnrollment(
+      {
+        holder: ana,
+        credentialId: anaCertificate.record.credentialId,
+        verifier: platform,
+        accreditation: new InMemoryAccreditation(),
+      },
+      nowSeconds(),
+    );
+    expect(decision).toMatchObject({
+      approved: false,
+      reasons: [expect.stringMatching(/No issuer has ever been accredited/)],
+    });
+    expect(decision.request).toBeUndefined();
+  });
+
+  it("denies a valid credential once its issuer's accreditation is withdrawn, and still accepts it as of before", async () => {
+    const registry = new InMemoryAccreditation();
+    registry.accredit(ENROLLMENT_POLICY.prerequisite, issuerRecord.credentialDefinitionId);
+    const before = nowSeconds();
+    await pause(1100);
+    registry.withdraw(ENROLLMENT_POLICY.prerequisite, issuerRecord.credentialDefinitionId);
+    await pause(1100);
+    const context = {
+      holder: ana,
+      credentialId: anaCertificate.record.credentialId,
+      verifier: platform,
+      accreditation: registry,
+    };
+
+    const now = await decideEnrollment(context, nowSeconds());
+    expect(now.verification?.verified).toBe(true);
+    expect(now).toMatchObject({ approved: false, accreditation: { accredited: false } });
+    expect(now.reasons[0]).toMatch(/not accredited for "Solidity Basics"/);
+    expect(await decideEnrollment(context, before)).toMatchObject({ approved: true });
   });
 });
 
@@ -174,7 +222,7 @@ describe("downloaded document and revocation", () => {
       holder: ana,
       credentialId: anaCertificate.record.credentialId,
       verifier: platform,
-      trustedCredentialDefinitionId: issuerRecord.credentialDefinitionId,
+      accreditation,
     };
     const genuine = await verifyDownloadedCertificate(context, anaCertificate.pdf, nowSeconds());
     expect(genuine).toMatchObject({ approved: true, documentMatches: true });
@@ -206,7 +254,7 @@ describe("downloaded document and revocation", () => {
         holder: ana,
         credentialId: anaCertificate.record.credentialId,
         verifier: platform,
-        trustedCredentialDefinitionId: issuerRecord.credentialDefinitionId,
+        accreditation,
       },
       anaCertificate.pdf,
       nowSeconds(),

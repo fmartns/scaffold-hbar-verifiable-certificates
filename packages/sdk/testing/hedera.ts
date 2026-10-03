@@ -11,6 +11,7 @@ import { DidDocument, TypedArrayEncoder, VerificationMethod } from "@credo-ts/co
 import type { Agent } from "@credo-ts/core";
 import * as hcsEsm from "@hiero-did-sdk/hcs";
 import { encodeHcs1 } from "../certificates/hcs1";
+import type { AccreditationReader } from "../certificates/accreditation";
 import type { PublishedFile } from "../certificates/ledger";
 
 interface Topic {
@@ -134,4 +135,30 @@ export async function importIssuerDid(issuer: Agent, topicId = "0.0.999"): Promi
     keys: [{ kmsKeyId: keyId, didDocumentRelativeKeyId: "#did-root-key" }],
   });
   return did;
+}
+
+/** In-memory stand-in for the accreditation registry contract, with the same history rules. */
+export class InMemoryAccreditation implements AccreditationReader {
+  private readonly entries = new Map<string, { course: string; id: string; grantedAt: number; withdrawnAt?: number }>();
+  private readonly now = () => Math.floor(Date.now() / 1000);
+
+  accredit(course: string, id: string): void {
+    if (this.entries.has(`${course}|${id}`)) throw new Error("AlreadyAccredited");
+    this.entries.set(`${course}|${id}`, { course, id, grantedAt: this.now() });
+  }
+
+  withdraw(course: string, id: string): void {
+    const entry = this.entries.get(`${course}|${id}`);
+    if (!entry || entry.withdrawnAt) throw new Error("NotAccredited");
+    entry.withdrawnAt = this.now();
+  }
+
+  async credentialDefinitions(course: string): Promise<string[]> {
+    return [...this.entries.values()].filter(entry => entry.course === course).map(entry => entry.id);
+  }
+
+  async isAccredited(course: string, id: string, at: number): Promise<boolean> {
+    const entry = this.entries.get(`${course}|${id}`);
+    return !!entry && entry.grantedAt <= at && (entry.withdrawnAt === undefined || at < entry.withdrawnAt);
+  }
 }

@@ -23,7 +23,7 @@ const inGitHub = process.env.GITHUB_ACTIONS === "true";
 const OUTPUT_TAIL_LINES = 40;
 const BOOT_TIMEOUT_MS = 90_000;
 const ROUTE_TIMEOUT_MS = 30_000;
-const CORE_ROUTES = ["/", "/dashboard", "/api/env/status"];
+const CORE_ROUTES = ["/", "/api/health"];
 
 // Scanned over the working tree even without gitleaks; the Hedera DER rules mirror .gitleaks.toml, which also covers the
 // git history. Full-length keys only: tests carry truncated DER prefixes to prove redaction, and those must not match.
@@ -51,6 +51,9 @@ const YARN_BUILTINS = new Set([
 ]);
 
 const read = file => readFileSync(path.join(root, file), "utf8");
+// Windows resolves `yarn` to `yarn.cmd`, which `spawn` only finds through a shell.
+const WINDOWS = process.platform === "win32";
+
 const git = gitArgs => execFileSync("git", gitArgs, { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 const publishableFiles = () =>
   git(["ls-files", "-co", "--exclude-standard", "-z"])
@@ -72,6 +75,7 @@ function run(cmd, cmdArgs, env = {}) {
       cwd: root,
       env: { ...process.env, FORCE_COLOR: "0", ...env },
       stdio: ["ignore", "pipe", "pipe"],
+      shell: WINDOWS,
     });
     let output = "";
     child.stdout.on("data", d => (output += d));
@@ -272,7 +276,8 @@ const requirements = [
         cwd: root,
         env: { ...process.env, PORT: String(port), FORCE_COLOR: "0" },
         stdio: ["ignore", "pipe", "pipe"],
-        detached: true,
+        detached: !WINDOWS,
+        shell: WINDOWS,
       });
       let output = "";
       let exited = false;
@@ -281,7 +286,9 @@ const requirements = [
       server.on("close", () => (exited = true));
       const stop = () => {
         try {
-          process.kill(-server.pid, "SIGTERM");
+          // The server is a process tree (yarn → next): stop all of it.
+          if (WINDOWS) execFileSync("taskkill", ["/pid", String(server.pid), "/T", "/F"], { stdio: "ignore" });
+          else process.kill(-server.pid, "SIGTERM");
         } catch {
           // already gone
         }

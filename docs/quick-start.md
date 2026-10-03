@@ -1,147 +1,115 @@
 # Quick start
 
-Two paths. The first takes about five minutes and needs no Hedera account; the second issues and revokes a real
-credential on Testnet in about fifteen. Every command below exists in the root `package.json`; when one fails, the
-exact messages and fixes are in [troubleshooting.md](troubleshooting.md).
+From nothing to a revoked certificate on Testnet in about fifteen minutes. Every command exists in the root
+`package.json`; when one fails, the message and its fix are in [troubleshooting.md](troubleshooting.md).
 
-Prerequisites: Node.js >= 20.18.3, Git with `user.name`/`user.email` set, and Yarn (`corepack enable` turns on the Yarn
-that ships with Node). For `yarn self-check` and `yarn secrets:scan` you also need
-[gitleaks](https://github.com/gitleaks/gitleaks) (`brew install gitleaks` on macOS).
+Prerequisites: Node.js ≥ 20.19, Git with `user.name`/`user.email` set, and Yarn (`corepack enable` turns on the Yarn
+pinned by the repository). For `yarn self-check` and `yarn secrets:scan` you also need
+[gitleaks](https://github.com/gitleaks/gitleaks).
 
-## Path 1: offline, five minutes
+## 1. Scaffold and install
 
 ```bash
 npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement
 cd <project-name>
 yarn install     # if the CLI did not run it
-yarn doctor      # Node, Yarn and .env; a missing .env is only a warning here
-yarn test        # SDK, contracts and frontend, offline and credential-free
-yarn dev         # http://localhost:3000
+yarn test        # offline, no account needed: the whole flow against an in-memory Hedera
 ```
 
-The `--` before `--template` is required: without it npm swallows the flag and the CLI never sees it.
+The `--` before `--template` is required: without it npm swallows the flag. `yarn install` downloads prebuilt native
+libraries for Askar, AnonCreds and zstd (macOS x64/arm64, Linux x64/arm64, Windows x64) from their GitHub releases.
 
-What you just ran:
+## 2. Create and fund a Testnet account
 
-- `yarn test` includes `CredentialLifecycle.flow.test.ts`, the whole issuer → HCS → `CredentialRegistry` → verifier flow
-  against the compiled contract, with an in-memory HCS topic and a fake Mirror Node (including indexing lag). The test
-  layers and fixtures are in [testing.md](testing.md).
-- <http://localhost:3000/dashboard> renders every integration as **Not configured** with the command that fixes it.
-- <http://localhost:3000/issuer> explains what is missing and disables its forms.
+Create an account at <https://portal.hedera.com> (ED25519 or ECDSA both work) and top it up at the faucet. The whole
+walkthrough spends about 13 HBAR (the accreditation contract's creation fee is about 10 of it); `yarn setup` asks for at least 20 by default (`HEDERA_MIN_BALANCE_HBAR` changes it).
 
-`yarn check` (lint, types, tests and the harness recipe) is the inner loop from here on.
-
-## Path 2: a real credential on Testnet
-
-### 1. Create and fund an account
-
-Create a Testnet account at <https://portal.hedera.com> and choose an **ECDSA** key. ECDSA is not required by the
-operator (ED25519 works for `yarn setup` and HCS), but the same key can then be the contract deployer and be imported
-into MetaMask as the issuer's signer, which keeps this guide to one account. The portal funds it with test HBAR; top
-up at <https://portal.hedera.com/faucet>. `yarn setup` requires at least 20 HBAR on Testnet.
-
-### 2. Configure and validate
+## 3. Configure and validate
 
 ```bash
 cp .env.example .env
 ```
 
-Set `HEDERA_OPERATOR_ID` (`0.0.x`) and `HEDERA_OPERATOR_KEY` (the hex private key, DER or raw 32 bytes). `.env` is
-git-ignored; never commit it and never give a variable holding a key the `NEXT_PUBLIC_` prefix. Every variable is
-explained in the [README](../README.md#variáveis-de-ambiente).
+Set `HEDERA_OPERATOR_ID` (`0.0.x`) and `HEDERA_OPERATOR_KEY`. The key can be DER (`302e…` / `3030…`) or raw hex (with or
+without `0x`); for raw hex the curve is read from the account on the Mirror Node. `.env` is git-ignored.
 
 ```bash
 yarn setup
 ```
 
-It checks, without spending anything, that the network is valid, the account exists, the key controls it and the
-balance is enough. Exit code 0 means valid, 1 invalid (each problem is listed with its fix), 2 network unreachable.
+```
+Setup: validating the Hedera environment
+  Network:  testnet
+  Account:  0.0.xxxxxxx (https://hashscan.io/testnet/account/0.0.xxxxxxx)
+  Balance:  997.85 HBAR (minimum 20 HBAR)
+…
+Environment validated.
+No issuer on testnet yet. Next: yarn issuer:init (publishes the issuer on Hedera).
+```
 
-### 3. Create the HCS evidence topic
+Exit code 0 means valid, 1 invalid (each problem is listed with its fix), 2 network unreachable.
+
+## 4. Publish the issuer
 
 ```bash
-yarn hcs:topic --write --smoke-test
+yarn issuer:init
 ```
 
-It shows the plan and the estimated cost (about US$ 0.02 for the topic, plus about US$ 0.0005 for the smoke-test
-message), asks `[Y/n]`, creates the topic with the operator key as `submitKey`, writes `HEDERA_HCS_TOPIC_ID` to
-`.env`, then publishes one message and reads it back from the Mirror Node. It never creates a second topic over a
-usable configured one. Keep the HashScan link it prints.
+It shows the plan and the cost and asks before paying (`--yes` skips the question):
 
-### 4. Deploy `CredentialRegistry`
+```
+Publishes on Hedera (HCS), paid by the operator account:
+  1. did:hedera of the issuer (a topic holding the DID document)
+  2. CourseCompletion schema (HCS-1 file)
+  3. Revocable credential definition (HCS-1 file)
+  4. Revocation registry definition (HCS-1 file) and its entries topic (the state verifiers rebuild)
+  5. AccreditationRegistry contract (Smart Contract Service), accrediting that credential definition for the course
+Estimated cost: about 12 HBAR on Testnet (≈ US$ 1.20; the contract creation fee is about US$ 1 of it).
+Publish the issuer on testnet? [y/N] y
+Publishing… (about a minute: every step waits for consensus and the Mirror Node)
+Issuer published:
+Issuer DID:              did:hedera:testnet:6ynG…6qQP_0.0.10835831
+Schema:                  did:hedera:testnet:6ynG…_0.0.10835831/anoncreds/v1/SCHEMA/0.0.10835833
+Credential definition:   did:hedera:testnet:6ynG…_0.0.10835831/anoncreds/v1/PUBLIC_CRED_DEF/0.0.10835834
+Revocation registry:     did:hedera:testnet:6ynG…_0.0.10835831/anoncreds/v1/REV_REG/0.0.10835837
+Revocation entries:      https://hashscan.io/testnet/topic/0.0.10835836
+DID document topic:      https://hashscan.io/testnet/topic/0.0.10835831
+Accreditation registry:  https://hashscan.io/testnet/contract/0.0.10837530 (Solidity Basics)
+```
 
-The deployer key is passed only to this command and is never written to `.env` (there is no default key: without it a
-live deploy fails). In zsh or bash with `HIST_IGNORE_SPACE`/`HISTCONTROL=ignorespace`, the leading space keeps the
-line out of shell history.
+Running it again costs nothing: it prints the published issuer. The issuer's wallet (with the DID key and the credential
+definition's private keys) is in `.data/wallets/` — back it up; without it you cannot issue or revoke for this issuer.
+
+## 5. Issue, verify, revoke
 
 ```bash
- __RUNTIME_DEPLOYER_PRIVATE_KEY=0x<ecdsa-private-key> yarn deploy --network hederaTestnet
+yarn dev    # http://localhost:3000
 ```
 
-The deployer becomes the registry admin and the topic number from `HEDERA_HCS_TOPIC_ID` is fixed in the contract
-(`hcsTopicNum`). The deploy ends by regenerating `packages/sdk/generated` with the address, the contract id and
-HashScan links ([integration.md](integration.md#contract-abi-and-address-codegen)). Copy the printed address into
-`.env`:
+1. **Issue certificate** with the defaults (Ana Example, Solidity Basics, 88). About 20 s: the PDF goes to HCS-1
+   first, then the credential goes into Ana's wallet.
+2. **Download PDF**: it is rebuilt from its HCS-1 topic and checked against the memo hash before you get it. **Public
+   page** is where the QR code leads.
+3. **ana applies** → **ENROLLED**. The card lists what Platform B received (`course = Solidity Basics`,
+   `grade >= 70: true`) and what it never received.
+4. **bob applies** → **DENIED**: Bob has no credential, only (perhaps) a copy of the PDF.
+5. **Revoke** → one message on the revocation entries topic.
+6. **ana applies** → **DENIED**. Set **Was it valid at (UTC)?** to a time between issuing and revoking →
+   **ENROLLED**: the same proof checked against the state at that consensus time.
+7. **Check a downloaded certificate** with the PDF from step 2 → document **MATCH**, credential **REVOKED OR INVALID**.
+8. Optional, and permanent for this issuer: issue a new certificate, then **Withdraw (authority)** in the issuer panel →
+   **ana applies** → **DENIED** ("not accredited"), although her new credential is valid. A withdrawn credential
+   definition is never re-accredited; to start over, use a fresh `CERTIFICATES_DATA_DIR` and run `yarn issuer:init`.
+
+The same flow without a browser:
 
 ```bash
-HEDERA_CREDENTIAL_REGISTRY_ADDRESS=0x<address printed by the deploy>
+curl -X POST localhost:3000/api/certificates -H 'Content-Type: application/json' \
+  -d '{"holder":"ana","holderName":"Ana Example","studentId":"123456","course":"Solidity Basics","grade":88}'
+curl -X POST localhost:3000/api/enroll -H 'Content-Type: application/json' -d '{"holder":"ana"}'
 ```
 
-Restart `yarn dev` and open <http://localhost:3000/dashboard>: operator, relay, Mirror Node, topic and registry should
-be **OK**, and the registry row cross-checks that it was deployed for the configured topic.
+## 6. Before you change anything
 
-### 5. Register the issuer
-
-Issuers are registered by the admin, once per namespace; the console never does it. The namespace is
-`keccak256` of a lowercase name such as `acme-university` ([credential-schema.md §3.1](credential-schema.md#31-issuer)).
-The signer is the wallet address that will sign in the console. `maxValidity` caps each signature window
-(`validUntil - signedAt`), from 1 second to 30 days; the console's default window is 10 minutes.
-
-```bash
- __RUNTIME_DEPLOYER_PRIVATE_KEY=0x<ecdsa-private-key> yarn workspace @sh/hardhat hardhat console --network hederaTestnet
-```
-
-```js
-const registry = await ethers.getContractAt("CredentialRegistry", "0x<registry address>");
-const issuer = ethers.keccak256(ethers.toUtf8Bytes("acme-university"));
-await (await registry.registerIssuer(issuer, "0x<issuer wallet address>", 86400)).wait();
-await registry.issuerOf(issuer);
-```
-
-`IssuerAlreadyRegistered` means the namespace is taken on this deployment; pick another name. The admin and issuer
-roles are described in [credential-registry.md](credential-registry.md#access-control).
-
-### 6. Issue a credential
-
-1. Import the issuer key into MetaMask (or use HashPack in EVM mode). The console offers to add and switch to Hedera
-   Testnet (chain 296) when the wallet is elsewhere.
-2. At <http://localhost:3000/issuer>, connect the wallet and fill the form: **Issuer namespace** is the name you
-   registered (`acme-university`), then a credential type (the presets of [credential-schema.md §6](credential-schema.md#6-examples-three-credential-types-one-schema-model)),
-   a reference, the claims and the holder identifier.
-3. Submit. The console builds and signs the `CredentialEvent`, dry-runs `issue` (contract errors show up here, before
-   anything is paid), publishes the signed message to HCS and waits for the consensus receipt, then sends `issue` with
-   the real `HcsRef`.
-4. The result shows the credential ID (with a QR code), the HCS transaction on HashScan, the registry transaction and
-   the one-time holder secret. Download the holder document for the holder; the raw identifier never left the browser.
-
-The full flow, the submitter pin and every error state are in [issuer-console.md](issuer-console.md).
-
-### 7. Verify and audit
-
-- The console's audit panel runs `auditCredential` ([credential-audit.md](credential-audit.md)). Right after issuing it
-  usually says `pending_index`: the Mirror Node has not indexed the log or the message yet (seconds). It re-queries
-  until the evidence is `consistent`.
-- The dashboard's **Credential status** card reads `statusOf(credentialId)` from the contract: that is the answer.
-- The public verifier page (`/verify/[credentialId]`, link and QR code) is planned in
-  [#40](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/issues/40).
-
-### 8. Revoke
-
-In the console's revoke card, enter the credential ID and a reason, then confirm in the dialog. Revocation is final and goes through the same
-publish-then-transact flow; `statusOf` becomes revoked and the audit shows the revocation evidence.
-
-## Next
-
-- Add your own credential type, contract or network: [README, Customização](../README.md#customização).
-- What each Hedera service does and costs here: [hedera.md](hedera.md).
-- Before mainnet: [deployment.md](deployment.md) and the security Definition of Done in [security.md](security.md).
+`yarn check` (lint, types, tests and the harness recipe) is the inner loop. Read [architecture.md](architecture.md) and
+[AGENTS.md](../AGENTS.md) first: the rules about proof requests, private attributes and the PDF are normative.
