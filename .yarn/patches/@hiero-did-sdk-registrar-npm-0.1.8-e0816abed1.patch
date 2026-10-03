@@ -1,0 +1,60 @@
+diff --git a/dist/browser/index.cjs.js b/dist/browser/index.cjs.js
+index 2fc70b0fc767d2c799eeac9510f29fe68d558ae4..3f01e979a217e63ac5acc05aac533962cfd029b8 100644
+--- a/dist/browser/index.cjs.js
++++ b/dist/browser/index.cjs.js
+@@ -158,7 +158,9 @@ var _MessageAwaiter = class _MessageAwaiter {
+       try {
+         const messages = await this.topicReader.fetchFrom(this.topicId, this.network, {
+           from: startsAt.getTime(),
+-          to: now
++          // Patched: the window must move with each poll, or a message whose consensus timestamp is later than the
++          // local clock at the start of the wait is never seen (hiero-did-sdk-js MessageAwaiter).
++          to: Date.now()
+         });
+         for (const message of messages) {
+           if (remainingMessages.has(message)) {
+diff --git a/dist/browser/index.esm.js b/dist/browser/index.esm.js
+index 84f499750adf931d7d5e6c9c677024228afcbdb4..f480309c9db74fe9a262ebb37e4fd2734c246068 100644
+--- a/dist/browser/index.esm.js
++++ b/dist/browser/index.esm.js
+@@ -130,7 +130,9 @@ var _MessageAwaiter = class _MessageAwaiter {
+       try {
+         const messages = await this.topicReader.fetchFrom(this.topicId, this.network, {
+           from: startsAt.getTime(),
+-          to: now
++          // Patched: the window must move with each poll, or a message whose consensus timestamp is later than the
++          // local clock at the start of the wait is never seen (hiero-did-sdk-js MessageAwaiter).
++          to: Date.now()
+         });
+         for (const message of messages) {
+           if (remainingMessages.has(message)) {
+diff --git a/dist/index.cjs.js b/dist/index.cjs.js
+index 36f5b97fe9903594438d454593250d9138f8b97a..32390d8441ea8bd06c9841011bcb780364a4e9b3 100644
+--- a/dist/index.cjs.js
++++ b/dist/index.cjs.js
+@@ -158,7 +158,9 @@ var _MessageAwaiter = class _MessageAwaiter {
+       try {
+         const messages = await this.topicReader.fetchFrom(this.topicId, this.network, {
+           from: startsAt.getTime(),
+-          to: now
++          // Patched: the window must move with each poll, or a message whose consensus timestamp is later than the
++          // local clock at the start of the wait is never seen (hiero-did-sdk-js MessageAwaiter).
++          to: Date.now()
+         });
+         for (const message of messages) {
+           if (remainingMessages.has(message)) {
+diff --git a/dist/index.esm.js b/dist/index.esm.js
+index 5f5f163ab12594cb3e690201aae0369b1d2afb92..5d334f90fac425dfb333010443470b361e441ab2 100644
+--- a/dist/index.esm.js
++++ b/dist/index.esm.js
+@@ -130,7 +130,9 @@ var _MessageAwaiter = class _MessageAwaiter {
+       try {
+         const messages = await this.topicReader.fetchFrom(this.topicId, this.network, {
+           from: startsAt.getTime(),
+-          to: now
++          // Patched: the window must move with each poll, or a message whose consensus timestamp is later than the
++          // local clock at the start of the wait is never seen (hiero-did-sdk-js MessageAwaiter).
++          to: Date.now()
+         });
+         for (const message of messages) {
+           if (remainingMessages.has(message)) {

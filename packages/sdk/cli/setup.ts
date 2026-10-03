@@ -2,16 +2,17 @@
  * `yarn setup`: the entry point of the template's initialization flow.
  *
  * This file is only presentation. The decision "is the environment usable?" lives in `hedera/environment.ts`, which the
- * dashboard (#11) and the CI self-check (#14) reuse. Everything here is reachable without printing: `runSetup` returns
+ * certificate agents and the CI self-check reuse. Everything here is reachable without printing: `runSetup` returns
  * the lines and the exit code, and only `main` writes to the terminal.
  */
-import { existsSync } from "node:fs";
 import path from "node:path";
-import { describeDeployments } from "../hedera/contracts";
-import type { GeneratedDeployments } from "../hedera/contracts";
+import { CERTIFICATE_ENV, findRepositoryRoot } from "../certificates/config";
+import { CertificateStore } from "../certificates/store";
+import type { IssuerRecord } from "../certificates/store";
 import { validateHederaEnvironment } from "../hedera/environment";
 import type { EnvironmentVariables, ValidateEnvironmentOptions } from "../hedera/environment";
 import { formatEnvironmentReport } from "../hedera/environment-report";
+import { isEntryPoint, loadRootEnv } from "./env";
 
 export const EXIT = {
   OK: 0,
@@ -29,9 +30,9 @@ export interface SetupResult {
 export async function runSetup(
   argv: string[],
   env: EnvironmentVariables,
-  options: ValidateEnvironmentOptions & { manifest?: GeneratedDeployments } = {},
+  options: ValidateEnvironmentOptions & { issuer?: IssuerRecord | null } = {},
 ): Promise<SetupResult> {
-  const { manifest, ...validateOptions } = options;
+  const { issuer, ...validateOptions } = options;
   const validation = await validateHederaEnvironment(env, validateOptions);
 
   if (argv.includes("--json")) {
@@ -46,26 +47,29 @@ export async function runSetup(
     return { exitCode: validation.status === "unverified" ? EXIT.UNVERIFIED : EXIT.INVALID, lines };
   }
 
-  // Steps that depend on Hedera (deployment, HCS topic, HTS token) are added by later tasks and run from here.
-  lines.push("", "Environment validated. Steps that depend on Hedera run after this check.");
-  lines.push(
-    "",
-    `Contracts on ${validation.network} (packages/sdk/generated, written by \`yarn deploy\`):`,
-    ...describeDeployments(validation.network, manifest).map(line => `  ${line}`),
-  );
+  lines.push("", "Environment validated.");
+  const record = issuer === undefined ? await readIssuer(env) : issuer;
+  if (record && record.network === validation.network) {
+    lines.push(
+      `Issuer on ${validation.network}: ${record.issuerDid}`,
+      `  credential definition: ${record.credentialDefinitionId}`,
+      `  revocation entries topic: ${record.revocationEntriesTopicId}`,
+      "Next: yarn dev, then open http://localhost:3000",
+    );
+  } else {
+    lines.push(`No issuer on ${validation.network} yet. Next: yarn issuer:init (publishes the issuer on Hedera).`);
+  }
   return { exitCode: EXIT.OK, lines };
 }
 
-/** Loads the repository-root .env without overriding variables that are already set. Returns whether it existed. */
-function loadRootEnv(file: string): boolean {
-  if (!existsSync(file)) return false;
-  process.loadEnvFile(file);
-  return true;
+/** The issuer published by `yarn issuer:init`, read from the local data directory. */
+function readIssuer(env: EnvironmentVariables): Promise<IssuerRecord | null> {
+  const dataDir = path.resolve(findRepositoryRoot(), env[CERTIFICATE_ENV.DATA_DIR] || ".data");
+  return new CertificateStore(dataDir).readIssuer();
 }
 
 async function main() {
-  const envFile = path.resolve(__dirname, "../../../.env");
-  const loaded = loadRootEnv(envFile);
+  const loaded = loadRootEnv();
   const { exitCode, lines } = await runSetup(process.argv.slice(2), process.env);
   if (!loaded && !process.argv.includes("--json")) {
     console.log("No .env file found. Create it with: cp .env.example .env\n");
@@ -74,7 +78,7 @@ async function main() {
   process.exitCode = exitCode;
 }
 
-if (require.main === module) {
+if (isEntryPoint(import.meta.url)) {
   main().catch(() => {
     // Deliberately no error text: an unexpected failure must not print values from the environment.
     console.error("Setup failed unexpectedly. Run `yarn doctor` and try again; report the problem if it persists.");

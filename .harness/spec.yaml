@@ -1,10 +1,11 @@
 schemaVersion: 2
 
-name: verifiable-settlement
+name: verifiable-certificates
 description: >-
-  Extend the verifiable-settlement template (oracle attestation, HCS evidence,
-  Solidity SettlementRouter, HTS credit, Mirror Node audit) without breaking its
-  settlement guarantees. The feature to build is described in .harness/prd.md.
+  Extend the verifiable-certificates template (AnonCreds credentials with Hedera
+  as the Verifiable Data Registry, PDF documents on HCS-1, an accreditation registry contract, a relying party that
+  decides from zero-knowledge proofs) without breaking its trust and privacy
+  guarantees. The feature to build is described in .harness/prd.md.
 
 # The existing app must be healthy before an agent touches it.
 baseline:
@@ -21,9 +22,8 @@ constraints:
     - packages/nextjs
     - packages/sdk
 
-# The harness defaults, plus the secret-bearing names this template uses
-# (HEDERA_OPERATOR_KEY, DEPLOYER_PRIVATE_KEY_ENCRYPTED, ORACLE_API_KEY) and the
-# rule that a secret never uses the NEXT_PUBLIC_ prefix.
+# The harness defaults, plus the secret-bearing name this template uses
+# (HEDERA_OPERATOR_KEY) and the rule that a secret never uses the NEXT_PUBLIC_ prefix.
 secretScan:
   failOnFiles:
     - .env
@@ -33,8 +33,6 @@ secretScan:
   patterns:
     - name: private-key-assignment
       pattern: "(PRIVATE_KEY|OPERATOR_KEY|HEDERA_OPERATOR_PRIVATE_KEY)\\s*=\\s*(0x)?[0-9a-fA-F]{32,}"
-    - name: oracle-api-key-assignment
-      pattern: "ORACLE_API_KEY[ \\t]*=[ \\t]*[^\\s#]{8,}"
     - name: next-public-secret
       pattern: "NEXT_PUBLIC_[A-Z0-9_]*(PRIVATE_KEY|OPERATOR_KEY|MNEMONIC|SECRET)"
 

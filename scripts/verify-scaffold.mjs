@@ -14,6 +14,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Windows resolves `npx`/`yarn` to `.cmd` shims, which `spawnSync` only finds through a shell.
+const WINDOWS = process.platform === "win32";
 const args = process.argv.slice(2);
 const opt = name => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
 const cliVersion = opt("--cli") ?? "latest";
@@ -27,7 +29,7 @@ const dir = path.join(work, project);
 const failures = [];
 const step = title => console.log(`\n== ${title}`);
 const run = (cmd, cmdArgs, options = {}) => {
-  const r = spawnSync(cmd, cmdArgs, { stdio: "inherit", ...options });
+  const r = spawnSync(cmd, cmdArgs, { stdio: "inherit", shell: WINDOWS, ...options });
   if (r.status !== 0) {
     console.error(`FAILED (${r.status}): ${cmd} ${cmdArgs.join(" ")}`);
     process.exit(1);
@@ -81,14 +83,14 @@ const exists = p => existsSync(path.join(dir, p));
 const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8"));
 for (const p of ["hardhat", "nextjs", "sdk"]) expect(exists(`packages/${p}/package.json`), `packages/${p} present`);
 expect(!exists("packages/foundry"), "packages/foundry absent");
-expect(exists("packages/hardhat/node_modules") && exists("packages/nextjs/node_modules"), "dependencies installed");
+expect(exists("packages/hardhat/node_modules") && exists("packages/sdk/node_modules") && exists("packages/nextjs/node_modules"), "dependencies installed");
 expect(exists(".yarn/releases") && exists("yarn.lock"), "pinned Yarn release and lockfile preserved");
 expect(
   exists(".env.example") && exists(".gitignore") && exists("AGENTS.md") && exists("README.md"),
   "root metadata files preserved",
 );
 expect(!exists("template.json"), "template.json consumed and removed by the CLI (expected)");
-expect(pkg.engines?.node === ">=20.18.3", `engines.node is ${pkg.engines?.node}`);
+expect(pkg.engines?.node === ">=20.19.0", `engines.node is ${pkg.engines?.node}`);
 const ws = Array.isArray(pkg.workspaces) ? pkg.workspaces : pkg.workspaces?.packages;
 expect(
   ["packages/hardhat", "packages/nextjs", "packages/sdk"].every(w => ws?.includes(w)),
@@ -107,11 +109,10 @@ step("Run yarn setup without credentials: it must fail cleanly and never print s
     "HEDERA_NETWORK",
     "HEDERA_OPERATOR_ID",
     "HEDERA_OPERATOR_KEY",
-    "HEDERA_RPC_URL",
     "HEDERA_MIRROR_NODE_URL",
   ])
     delete clean[name];
-  const setup = spawnSync("yarn", ["setup"], { cwd: dir, env: clean, encoding: "utf8" });
+  const setup = spawnSync("yarn", ["setup"], { cwd: dir, env: clean, encoding: "utf8", shell: WINDOWS });
   expect(setup.status === 1, `yarn setup exits 1 without credentials (got ${setup.status})`);
   expect(/MISSING_ENV/.test(setup.stdout), "yarn setup names the missing variables");
 }

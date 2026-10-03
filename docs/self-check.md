@@ -19,7 +19,7 @@
 | `types` | — | `yarn check-types` |
 | `tests` | — | `yarn test` (whatever the test suite of #13 contains) |
 | `build` | GATE-17 | `yarn build` |
-| `boot` | GATE-18 | `yarn serve` does not answer within 90 s, or `/`, `/dashboard` or `/api/env/status` does not return 200 (the API must also return JSON) |
+| `boot` | GATE-18 | `yarn serve` does not answer within 90 s, or `/` or `/api/health` does not return 200 (the API must also return JSON). Both work without a `.env` |
 
 Requirements that depend on a failed one (`lint`, `types`, `tests`, `build` on `install`; `boot` on `build`) are reported as `BLOCKED`, not run. All other requirements always run, so one execution lists every failure.
 
@@ -46,4 +46,4 @@ Locally, without gitleaks on `PATH`, only the built-in patterns run and the step
 
 ## CI
 
-The workflow runs on every push and pull request, on Node 20.18.3 (the gate's minimum) and 24. The environment is clean by construction: a fresh runner, `actions/setup-node` without dependency cache, no build cache, no `.env` and no secrets. The job calls `node scripts/self-check.mjs` and `yarn install --immutable` runs inside it, as the `install` requirement. gitleaks is downloaded at a pinned version and its SHA-256 is verified; the checkout fetches the full history so that gitleaks sees every commit.
+The workflow runs on every push and pull request, on Node 20.19.0 (the template's minimum: Credo needs it; the bounty asks for 20.18.3 or later) and 24. The environment is clean by construction: a fresh runner, `actions/setup-node` without dependency cache, no build cache, no `.env` and no secrets. The job calls `node scripts/self-check.mjs` and `yarn install --immutable` runs inside it, as the `install` requirement. gitleaks is downloaded at a pinned version and its SHA-256 is verified; the checkout fetches the full history so that gitleaks sees every commit.

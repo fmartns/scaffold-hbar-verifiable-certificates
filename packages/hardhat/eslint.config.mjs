@@ -6,21 +6,16 @@ import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 
 export default defineConfig([
-  globalIgnores(["**/artifacts", "**/cache", "**/contracts", "**/node_modules/", "**/typechain-types", "**/*.json"]),
+  globalIgnores(["**/artifacts", "**/cache", "**/contracts", "**/coverage", "**/node_modules/", "**/*.json"]),
   {
     files: ["**/*.ts"],
-    plugins: {
-      "@typescript-eslint": tsPlugin,
-      prettier: prettierPlugin,
-    },
-    languageOptions: {
-      globals: { ...globals.node, ...globals.mocha },
-      parser: tsParser,
-    },
+    plugins: { "@typescript-eslint": tsPlugin, prettier: prettierPlugin },
+    languageOptions: { globals: { ...globals.node, ...globals.mocha }, parser: tsParser },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       ...prettierConfig.rules,
       "@typescript-eslint/no-unused-vars": "error",
+      // Contract handles in tests are untyped (no typechain): the ABI is the contract's own.
       "@typescript-eslint/no-explicit-any": "off",
       "prettier/prettier": ["warn", { endOfLine: "auto" }],
     },

@@ -10,7 +10,7 @@ How this repository behaves as a `create-scaffold-hbar` template, what the CLI a
 | Status | Structure and contract validated locally **and** via the real GitHub download (repository made public for #19; run #8 in [§7](#7-validation-record)) |
 | **Revalidate** | **Before the final submission (#20).** The CLI changes often (0.1.0 → 0.4.0 in five months) — [§9](#9-revalidation-checklist-for-19) |
 
-**Dependencies.** The layout (`packages/hardhat`, `packages/nextjs`, `packages/sdk`) is the same for every direction under discussion in **#21** (RWA, AI agent, settlement): each needs contracts, a frontend and a shared SDK. Nothing in the structure encodes the settlement policy. Conclusions from **#2** ([dx-benchmark.md](dx-benchmark.md), REQ-04-*) are applied where marked.
+**Layout.** Three workspaces: `packages/hardhat`, `packages/nextjs`, `packages/sdk` (§6). The CLI behavior below is independent of what the workspaces contain.
 
 Evidence in this document was obtained by **running the published CLI** and reading its source (`src/main.ts`, `src/tasks/*`, `src/types.ts`, `src/utils/*` at `5732f5e`), not from documentation alone. Where they disagree, the CLI's behavior wins and the disagreement is recorded in [§5](#5-divergences-between-documentation-cli-and-requests).
 
@@ -55,7 +55,7 @@ Schema of `TemplateManifestSchema` in `src/types.ts@5732f5e` (Zod, non-strict: *
 
 | Field | Required | Type / accepted values | Consumed by the CLI | This template |
 |---|:-:|---|:-:|---|
-| `name` | **yes** | non-empty string | validated only | `verifiable-settlement` |
+| `name` | **yes** | non-empty string | validated only | `verifiable-certificates` |
 | `description` | no | string | no | set |
 | `version` | no | string | no | omitted |
 | `create-scaffold-hbar` | no | object (legacy key `create-hbar` is normalized to it) | yes | set |
@@ -63,7 +63,7 @@ Schema of `TemplateManifestSchema` in `src/types.ts@5732f5e` (Zod, non-strict: *
 | ↳ `capabilities.solidityFramework` | no | array of `hardhat` \| `foundry` \| `none` | prompts, flag validation | `["hardhat"]` |
 | ↳ `capabilities.packageManager` | no | array of `yarn` \| `npm` \| `none` (**not** `pnpm`) | prompts, flag validation | `["yarn"]` |
 | ↳ `defaults.frontend` / `.solidityFramework` / `.packageManager` | no | same enums | only when a capability has **several** options and `--yes` is set, or as the prompt's initial value | set; **inert today** (single option each), kept so that widening a capability keeps a defined default |
-| ↳ `envVars[]` | no | `{ key: string (min 1), description: string }` | yes → generates `.env.example` (`# description`, `KEY=`, blank line), overwriting | 8 variables |
+| ↳ `envVars[]` | no | `{ key: string (min 1), description: string }` | yes → generates `.env.example` (`# description`, `KEY=`, blank line), overwriting | 7 variables |
 | ↳ `outro` | no | must define at least one of `sections`, `steps`, `installCommand` | yes → final terminal message | `sections` |
 | ↳ `outro.sections[]` | — | `{ title?, steps[] (min 1) }`; each step needs at least one of `label`, `command`, `url`, `text` (non-empty strings) | yes | one "Next steps" section |
 | ↳ `outro.steps` | — | array of strings | **deprecated** legacy form | not used |
@@ -108,84 +108,78 @@ Behavior of the current CLI takes precedence; each divergence is recorded, not r
 | **DV-5** | The guide recommends forking `buidler-labs/scaffold-hbar`; the maintained repository is `hedera-dev/scaffold-hbar` | The CLI constant `TEMPLATE_REPO` still points to `buidler-labs/scaffold-hbar` for **built-in** templates | Irrelevant to community templates; noted |
 | **DV-6** | dx-benchmark REQ-04-01 proposed `requirements: { node: ">=20.18.3" }` | Never read (DV-2) | Requirement corrected in [dx-benchmark.md](dx-benchmark.md) |
 
-## 6. Structure contract for later tasks
+## 6. Structure contract
 
 ### 6.1 Layout
 
 ```
 .
-├── package.json          workspaces, engines, packageManager, root scripts (contract, §6.2)
+├── package.json          workspaces, engines (Node ≥ 20.19), packageManager, resolutions (the registrar patch), root scripts
 ├── .yarnrc.yml           nodeLinker: node-modules, nmHoistingLimits: workspaces, yarnPath
 ├── .yarn/releases/       pinned Yarn 3.2.3 (committed)
+├── .yarn/patches/        the documented patch to @hiero-did-sdk/registrar (architecture.md D6)
 ├── yarn.lock             committed
 ├── template.json         CLI manifest (removed by the CLI in generated projects)
 ├── .env.example          == generated from template.json envVars
 ├── packages/
-│   ├── hardhat/          @sh/hardhat   contracts/ deploy/ scripts/ test/ + hardhat.config.ts
-│   ├── nextjs/           @sh/nextjs    app/ components/ config/ hooks/ services/
-│   └── sdk/              @sh/sdk       hedera/ integrations/ generated/ + index.ts
-└── scripts/              doctor.mjs · validate-template.mjs · verify-scaffold.mjs
-                          (packages/sdk/cli/setup.ts is the `yarn setup` entry point)
+│   ├── hardhat/          @sh/hardhat   contracts/AccreditationRegistry.sol test/ + hardhat.config.ts (codegen task)
+│   ├── nextjs/           @sh/nextjs    app/ (console, /certificate/[id], api/)
+│   └── sdk/              @sh/sdk       certificates/ hedera/ cli/ generated/ testing/ + index.ts
+└── scripts/              doctor.mjs · self-check.mjs · secret-scan.mjs · validate-template.mjs · verify-scaffold.mjs
 ```
 
-- **One `.env` at the repository root** feeds every workspace (`hardhat.config.ts` loads it with `dotenv`; `next.config.ts` with `@next/env`). Only `NEXT_PUBLIC_*` variables reach the browser; secrets must never use that prefix.
-- **`@sh/sdk` is consumed as TypeScript source** (`main`/`types` → `index.ts`; the Next.js app uses `transpilePackages`; Hardhat loads it through `ts-node`). It has no build output, so no workspace depends on a build order and a fresh clone type-checks without building anything.
-- **ABIs and addresses are generated, never copied** (#24): `packages/sdk/generated/` is written by `packages/hardhat/scripts/generateTsAbis.ts` (the base scaffold's name; it writes to the SDK instead of `packages/nextjs/contracts/deployedContracts.ts`, so the SDK, the CLIs and the app share one manifest). The output is committed and checked for drift by `yarn test`. See [integration.md](integration.md#contract-abi-and-address-codegen).
-- **`packages/sdk/hedera/networks.ts` is the only place** where chain ids and RPC/Mirror/HashScan URLs live (REQ-04-02). Hardhat and Next.js import it; a URL literal anywhere else is a defect.
-- **No default deployer key.** `hardhat.config.ts` only gives live networks an account when `__RUNTIME_DEPLOYER_PRIVATE_KEY` is injected at run time; otherwise a deploy fails instead of using a well-known key (REQ-04-03).
-- **Hardhat network is not forked by default.** Forking emulates HTS only and is opt-in (REQ-04-06).
+- **Hardhat, for one contract with one job.** The manifest declares `solidityFramework: ["hardhat"]`.
+  `AccreditationRegistry` holds trust (which credential definitions are accredited for a course); validity lives in
+  AnonCreds proofs checked against HCS state. Hardhat compiles and tests it on the in-process network only: the SDK
+  deploys and calls it on Hedera with the Hedera SDK, so no JSON-RPC relay, deployer key format or `hardhat-deploy`.
+- **ABI and bytecode are generated, never copied.** `yarn codegen` writes
+  `packages/sdk/generated/AccreditationRegistry.ts`; the contract tests fail when it is stale.
+- **One `.env` at the repository root** feeds every workspace (`next.config.ts` loads it with `@next/env`, forcing a
+  reload because Next.js has already cached its own directory; the CLIs use `process.loadEnvFile`). Only
+  `NEXT_PUBLIC_*` variables reach the browser; secrets never use that prefix.
+- **`@sh/sdk` is consumed as TypeScript source** and is an ES module (`"type": "module"`): Credo 0.7 is ESM-only.
+  `@sh/sdk` (root) exports only client-safe code; `@sh/sdk/certificates` is server-only.
+- **Native server packages are dependencies of both workspaces** (Credo, Askar, AnonCreds, zstd, Hedera SDK, pdf-lib)
+  and listed in `SERVER_EXTERNALS` in `next.config.ts`. With `nmHoistingLimits: workspaces`, a package resolvable only
+  from `packages/sdk` would be bundled by webpack, and its `.node` binaries would break the build.
+- **`packages/sdk/hedera/networks.ts` is the only place** where Mirror Node and HashScan URLs live.
 
 ### 6.2 Root scripts (stable contracts)
 
 Every root script exits non-zero on failure and chains with `&&`, so a failing step stops the run.
 
-| Script | Behavior today | Contract for later tasks |
+| Script | Behavior | Contract |
 |---|---|---|
-| `dev` | Next.js dev server | Stays the dev entry point. May start more processes later, never fewer |
-| `start` | Next.js dev server (**base convention: `start` = `next dev`**) | Must boot from a clean clone without a prior build. Production server is `serve` |
+| `dev` / `start` | Next.js dev server | Boots from a clean clone without a prior build; production server is `serve` |
 | `serve` | `next start` (needs `build`) | Production server |
-| `build` | `sdk:build` → `hardhat:compile` → `next:build` | Order is sdk → contracts → app; extend, do not reorder |
-| `lint` | eslint on `sdk`, `hardhat`, `nextjs` with `--max-warnings=0` | Warnings fail |
-| `check-types` | `tsc --noEmit` on the three packages; `hardhat:check-types` compiles the contracts first, because the tests import the typechain types that compilation generates | Must pass on a fresh clone, before any `build` or `test` |
-| `test` | `sdk:test` (Vitest) → `hardhat:test` → `next:test` | `test:integration` (#13) gets its own script |
-| `test:e2e` | `next:test:e2e` → Playwright (`packages/nextjs/e2e`, chromium only): route smoke tests and the public verifier's lifecycle, console API routes mocked at the HTTP boundary — no live Hedera network or credentials | Deliberately **not** part of `test` or `check` (see below); needs `playwright install chromium` once, which `yarn install` does not do automatically |
-| `check` | `lint` → `check-types` → `test` → `harness:doctor` | **The script #14 runs.** Must not need network or secrets |
-| `harness:doctor` | Loads `.harness/spec.yaml` (`hedera-harness doctor --recipe-only`) | Fails on a recipe schema error ([harness.md](harness.md)) |
-| `harness:validate` | Hedera Harness Tier 0–1: static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build` | Clean environments only (refuses a `.env`); run by `scripts/verify-scaffold.mjs` in the generated project |
-| `format` | prettier on the three packages | Required by the CLI (IR-7); already-formatted files produce no diff |
-| `doctor` | Checks Node ≥ `engines.node`, Yarn, `.env` presence. Prints to stderr | — |
-| `setup` | `doctor`, then validates network, account and balance through `validateHederaEnvironment` (#5). Exit 0 valid, 1 invalid, 2 network unreachable; `--json` prints the result on stdout. After a valid check it lists the generated deployments of the network (#24) | Every step that needs Hedera runs **after** the validation and only when it passes (deployment #9, HCS topic #6, HTS token #7) |
-| `deploy` | `hardhat deploy` (pass `--network hederaTestnet`/`hederaLocal`), then the ABI/address codegen (#24) | Deploying is always explicit; the codegen always follows it |
-| `codegen` | Regenerates `packages/sdk/generated` from the compiled artifacts (and, with `--network`, that network's deployment files) | `hardhat codegen --check` fails on stale output |
-| `verify:testnet` | End-to-end credential validation on the real Testnet (#18); asks before paying, `--yes`/`--dry-run`/`--json`; refuses mainnet; writes `docs/evidence/testnet/<runId>.{md,json}` | Never part of `check` or CI: it spends Testnet HBAR and needs the operator |
-| `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` mirror the base scaffold naming | The CLI's outro/prune logic relies on this naming |
-
-Not implemented on purpose (absent, so calling it fails with "Couldn't find a script"): `test:integration` (#13).
-
-#### CI gating for `test:e2e` (#15)
-
-`yarn test:e2e` is intentionally **not** wired into `yarn check`, and the existing CI workflow (`.github/workflows/ci.yml`) does not run it. Three reasons, read together:
-
-1. **The runner is deliberately cold.** `ci.yml`'s own header says it runs `scripts/self-check.mjs` "on every push and pull request, from a fresh runner: no dependency or build cache". Playwright needs a browser binary (~150–300 MB for Chromium) that `yarn install` does not fetch; a cache-less job would re-download it on every run of every matrix leg (two Node versions today), which is pure cost with no correctness signal `self-check` doesn't already give.
-2. **It changes what the gate is allowed to assume.** Every other step in `self-check` is a static check or runs fully offline (lint, types, Vitest, build). A Playwright run starts a real `next dev` server and a real browser process; that's a different failure class (port binding, browser launch flakiness, dev-server boot time) from what the self-check gate promises ("no network or secrets", per `AGENTS.md`'s `check` contract), and it would make the one gate CI runs slower and less deterministic for every contributor, not just ones touching `packages/nextjs/e2e`.
-3. **Precedent already exists for excluding a real/slow step from `check`.** `verify:testnet` (#18) is explicitly "never part of `check` or CI" because it spends Testnet HBAR; `test:e2e` isn't that expensive, but the same principle — a script that does something `check` promises not to (here: boot a browser and a server) stays out of `check` — applies.
-
-`test:e2e` is run manually (`yarn test:e2e`, after `playwright install chromium` once) and is a candidate for its own CI job later (a separate workflow or job, with the Playwright browser cached by `actions/cache` keyed on the Playwright version, mirroring `test:integration`/`test:e2e`'s "own script" treatment above) — not folded into the existing self-check matrix.
+| `build` | `sdk:build` → `hardhat:compile` → `next:build` | Order is sdk → contracts → app |
+| `lint` | eslint on `sdk`, `hardhat` and `nextjs` with `--max-warnings=0` | Warnings fail |
+| `check-types` | `tsc --noEmit` on the three packages | Passes on a fresh clone, before any `build` or `test` |
+| `test` | `sdk:test` → `hardhat:test` → `next:test` | Offline, no credentials (in-memory Hedera) |
+| `check` | `lint` → `check-types` → `test` → `harness:doctor` | The fast inner loop; no network or secrets |
+| `harness:doctor` / `harness:validate` | Hedera Harness recipe check / Tier 0–1 run | `validate` refuses a `.env` (clean environments only) |
+| `codegen` | regenerates the contract ABI and bytecode for the SDK | Run after every contract change |
+| `format` | prettier on the three packages | Required by the CLI (IR-7) |
+| `doctor` | Node ≥ `engines.node`, Yarn, `.env` presence | — |
+| `setup` | `doctor`, then `validateHederaEnvironment`; prints the published issuer or the next command. Exit 0 valid, 1 invalid, 2 unreachable; `--json` | Never spends anything |
+| `issuer:init` | Publishes the issuer's DID, schema, credential definition and revocation registry; plan + cost + confirmation; `--yes`; `--allow-mainnet` | The only command besides issuance and revocation that writes to Hedera |
+| `self-check` | The eligibility gate (see self-check.md) | What CI runs |
+| `secrets:scan` | gitleaks over history and tree | Exit 0 clean, 1 findings, 2 could not run |
+| `<pkg>:<script>` | `hardhat:*`, `next:*`, `sdk:*` | The CLI's outro/prune logic relies on this naming |
 
 ### 6.3 Deliberate differences from the base scaffold
 
 | Difference | Reason |
 |---|---|
-| No `packages/foundry` | The project is Hardhat-only (capability `["hardhat"]`) |
-| No forking plugin, no fallback deployer key, no burner/faucet UI | REQ-04-06, REQ-04-03 |
-| `eslint . --max-warnings=0` instead of `next lint` | `next lint` is deprecated in Next 15.5; flat config works for every package |
-| Vitest for the SDK | `node --test` does not expand globs on Node 20 — found by running on Node 20.18.3 |
-| No wagmi/RainbowKit/`scaffold-hbar-ui`/Tailwind yet | Added by #11, #12, #24 when used; adding them now would be unused dependencies |
-| No Yarn plugins committed | Not needed; fewer committed artifacts |
+| No `packages/foundry`; no `hardhat-deploy`, typechain or live Hardhat networks | The contract is deployed and called by the SDK with any operator key curve (architecture.md D2) |
+| Server externals declared twice (dependencies + `SERVER_EXTERNALS`) | Native libraries in a transpiled workspace (6.1) |
+| `eslint . --max-warnings=0` instead of `next lint` | `next lint` is deprecated in Next 15.5 |
+| Vitest for the SDK, with Credo and Hiero inlined | One module graph, so the in-memory Hedera replaces the real transport (testing.md) |
+| No wallet libraries (wagmi, RainbowKit) | Holders are Credo wallets, not EVM accounts |
 
 ## 7. Validation record
 
-Every run used the **published** CLI (`create-scaffold-hbar@0.4.0` via `npx`) in a clean temporary directory, with `--yes --skip-hedera-skills -f nextjs-app -s hardhat --package-manager yarn`. Local runs use the CLI's own `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` seam (it copies a directory instead of downloading with giget), fed with exactly the files git would publish (`git ls-files -co --exclude-standard`). Reproduce with `node scripts/verify-scaffold.mjs`.
+Runs 1–8 predate the 2026-10-03 pivot to certificates; the layout and flags (`-s hardhat`) are unchanged. Every run used the **published** CLI (`create-scaffold-hbar@0.4.0` via `npx`) in a clean temporary directory, with `--yes --skip-hedera-skills -f nextjs-app -s hardhat --package-manager yarn`. Local runs use the CLI's own `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` seam (it copies a directory instead of downloading with giget), fed with exactly the files git would publish (`git ls-files -co --exclude-standard`). Reproduce with `node scripts/verify-scaffold.mjs`.
 
 | # | Scenario | Result |
 |---|---|---|
@@ -197,6 +191,7 @@ Every run used the **published** CLI (`create-scaffold-hbar@0.4.0` via `npx`) in
 | 6 | 2026-10-01 (#25): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export | ✅ `.harness/` copied into the generated project; `yarn harness:validate` there → `passed=true`, 0 findings (static invariants, secret scan, `install --immutable`, `lint`, `check-types`, `test`, `build`) |
 | 7 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export, main at `6652637` + the credentials/audit/dashboard/issuer-console/testnet-validation work merged since run 6 | ✅ `node scripts/verify-scaffold.mjs`: all 15 structural checks, `yarn setup` fails cleanly without credentials (`MISSING_ENV`, no secret printed), `yarn harness:validate` → `passed=true`, 0 findings. Also found and fixed a real defect: `.claude/` (local AI assistant worktrees) was not gitignored, so `git ls-files -co` included it and the export crashed trying to `cpSync` a nested worktree as a file — fixed by ignoring `.claude/` and `.cursor/` |
 | 8 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (`latest` → 0.4.1), **real GitHub download** against the now-public repository | ✅ `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest`: the literal flow a bounty judge runs (`npx create-scaffold-hbar generated-app --template fmartns/scaffold-hbar-verifiable-settlement ...`) fetched the manifest and template anonymously from GitHub, scaffolded, installed, formatted, committed; all 15 structural checks, `yarn setup` fails cleanly without credentials, `yarn harness:validate` → `passed=true`, 0 findings. §8's "not verified yet" item for the download/manifest-lookup step is now closed |
+| 9 | 2026-10-03, after the pivot to certificates: Node 24.19.0 on Windows, `create-scaffold-hbar@latest`, local export of a clean clone of `feat/anoncreds-certificates` at `0b6b42c` | ✅ `node scripts/verify-scaffold.mjs`: all 15 structural checks (three workspaces, `engines.node >=20.19.0`, template.json consumed), `yarn setup` exits 1 naming the missing variables with no secret printed, `yarn harness:validate` → `passed=true`, `findings=0` (install with the native Askar/AnonCreds/zstd binaries, lint, types, tests, build). The `--remote` run waits for the merge to `main` |
 | E1 | **Original** `template.json` (initial commit) through the real CLI | ❌ crashes with `ZodError: Required` at `processTemplateManifest`, exit 1 → **IR-1** |
 | E2 | Fixed manifest, but the GitHub manifest lookup returns 404 (repo private/unpushed), `--yes` without `-s` | ❌ the CLI selects Foundry and demands `forge` → **IR-2** |
 | N1 | npm 11.16.0 argv logging | `--template` without `--` is consumed by npm → **DV-3** |
@@ -216,7 +211,7 @@ The CLI is updated frequently; this contract is valid for `0.4.0`. Before the fi
 
 1. `npm view create-scaffold-hbar version` and compare with `0.4.0`. If newer, read the diff of `src/types.ts`, `src/tasks/copy-template-files.ts` and `src/utils/template-capabilities.ts` against `5732f5e`.
 2. Update the pinned checks in `scripts/validate-template.mjs` if the schema changed; run it.
-3. Push (the repository is public since 2026-10-01), then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` on **Node 20.18.3** and on the current Node LTS.
+3. Push (the repository is public since 2026-10-01), then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` on **Node 20.19** and on the current Node LTS.
 4. Run the literal `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement` interactively once (prompts must not offer Foundry or npm).
 5. Re-test the form without `--` and update DV-3/D-02 if npm or the CLI changed how the flag is delivered.
 6. Update the date and CLI version at the top of this file and in [bounty-rules.md](bounty-rules.md)'s revalidation log.

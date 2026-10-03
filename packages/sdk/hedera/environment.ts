@@ -19,7 +19,6 @@ export const ENV = {
   NETWORK: "HEDERA_NETWORK",
   OPERATOR_ID: "HEDERA_OPERATOR_ID",
   OPERATOR_KEY: "HEDERA_OPERATOR_KEY",
-  RPC_URL: "HEDERA_RPC_URL",
   MIRROR_NODE_URL: "HEDERA_MIRROR_NODE_URL",
   MIN_BALANCE_HBAR: "HEDERA_MIN_BALANCE_HBAR",
 } as const;
@@ -58,8 +57,7 @@ export type IssueCode =
   | "NETWORK_MISMATCH"
   | "MIRROR_UNAVAILABLE"
   | "MAINNET_SELECTED"
-  | "KEY_UNVERIFIABLE"
-  | "RPC_UNAVAILABLE";
+  | "KEY_UNVERIFIABLE";
 
 export interface EnvironmentIssue {
   code: IssueCode;
@@ -86,7 +84,6 @@ export interface ValidEnvironment {
   ok: true;
   status: "valid";
   network: HederaNetworkName;
-  chainId: number;
   accountId: string;
   balance: HbarAmount;
   minimumBalance: HbarAmount;
@@ -96,6 +93,11 @@ export interface ValidEnvironment {
   mirrorNodeOrigin: string;
   /** True when the private key was checked against the account's key on the network. */
   keyVerified: boolean;
+  /**
+   * Curve of the operator key, taken from the account when the key was verified. A raw 32-byte hex key is valid for both
+   * curves, so this is what tells a client how to parse it. Null when the key could not be checked.
+   */
+  keyType: PublicKeyCandidate["type"] | null;
   warnings: EnvironmentIssue[];
   checkedAt: string;
 }
@@ -183,7 +185,7 @@ const LOOKS_LIKE_KEY = /^(0x)?([0-9a-fA-F]{64}|[0-9a-fA-F]{96}|[0-9a-fA-F]{100}|
 /** Known public hosts per network, used to catch an endpoint that belongs to another network without any request. */
 function networkOfHost(host: string): HederaNetworkName | null {
   for (const name of Object.keys(NETWORKS) as HederaNetworkName[]) {
-    const known = [NETWORKS[name].mirrorNodeUrl, NETWORKS[name].rpcUrl].map(u => parseHttpUrl(u)?.host);
+    const known = [parseHttpUrl(NETWORKS[name].mirrorNodeUrl)?.host];
     if (known.includes(host)) return name;
   }
   return null;
@@ -215,7 +217,7 @@ export const inspectPrivateKey: KeyInspector = async input => {
   const value = input.trim().replace(/^0x/i, "");
   if (!/^[0-9a-fA-F]+$/.test(value)) return null;
   try {
-    const { PrivateKey } = await import("@hiero-ledger/sdk");
+    const { PrivateKey } = await import("@hashgraph/sdk");
     const candidates: PublicKeyCandidate[] = [];
     if (value.length === 64) {
       // A raw 32-byte key is valid for both curves; the account's key decides which one it is.
@@ -302,27 +304,6 @@ async function lookupAccount(
   return { kind: "found", account: { deleted: body.deleted === true, balanceTinybars: BigInt(balance[1]), key } };
 }
 
-/** `eth_chainId` of a JSON-RPC relay; `null` when it does not answer with one. Never throws. */
-export async function fetchRelayChainId(
-  fetchImpl: typeof fetch,
-  rpcUrl: string,
-  timeoutMs: number,
-): Promise<number | null> {
-  try {
-    const response = await fetchImpl(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!response.ok) return null;
-    const { result } = (await response.json()) as { result?: unknown };
-    return typeof result === "string" && /^0x[0-9a-fA-F]+$/.test(result) ? Number.parseInt(result, 16) : null;
-  } catch {
-    return null;
-  }
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------------------------------------------------
@@ -365,7 +346,7 @@ export async function validateHederaEnvironment(
   const network = networkName ? getNetwork(networkName, env) : undefined;
 
   // 2. Endpoint overrides: well-formed, and not pointing at another network ------------------------------------------
-  for (const variable of [ENV.MIRROR_NODE_URL, ENV.RPC_URL]) {
+  for (const variable of [ENV.MIRROR_NODE_URL]) {
     const raw = read(variable);
     if (!raw) continue;
     const url = parseHttpUrl(raw);
@@ -635,47 +616,19 @@ export async function validateHederaEnvironment(
     );
   }
 
-  // 9. JSON-RPC relay, only when overridden --------------------------------------------------------------------------
-  const rpcOverride = read(ENV.RPC_URL);
-  if (rpcOverride && parseHttpUrl(rpcOverride)) {
-    const chainId = await fetchRelayChainId(fetchImpl, rpcOverride, timeoutMs);
-    if (chainId === null) {
-      warnings.push(
-        issue(
-          "RPC_UNAVAILABLE",
-          "connectivity",
-          `The JSON-RPC relay at ${redactUrl(rpcOverride)} did not answer eth_chainId.`,
-          `Contract deployment needs it. Check ${ENV.RPC_URL} or unset it to use the default relay.`,
-          { severity: "warning", variable: ENV.RPC_URL },
-        ),
-      );
-    } else if (chainId !== network.chainId) {
-      const owner = (Object.values(NETWORKS).find(n => n.chainId === chainId)?.name ?? "an unknown network") as string;
-      issues.push(
-        issue(
-          "NETWORK_MISMATCH",
-          "network",
-          `${ENV.RPC_URL} (${redactUrl(rpcOverride)}) answered chain ID ${chainId} (${owner}), but ${networkName} uses ${network.chainId}.`,
-          `Point ${ENV.RPC_URL} to a ${networkName} relay, or unset it.`,
-          { variable: ENV.RPC_URL, details: { configuredNetwork: networkName, reportedChainId: chainId } },
-        ),
-      );
-    }
-  }
-
   if (issues.length > 0) return invalid({ network: networkName, accountId: validAccountId });
 
   return {
     ok: true,
     status: "valid",
     network: networkName,
-    chainId: network.chainId,
     accountId: validAccountId,
     balance: toAmount(account.balanceTinybars),
     minimumBalance: toAmount(minBalance),
     hashscanUrl: network.hashscanUrl ? `${network.hashscanUrl}/account/${validAccountId}` : null,
     mirrorNodeOrigin: origin,
     keyVerified,
+    keyType: keyVerified && account.key ? (account.key.type as PublicKeyCandidate["type"]) : null,
     warnings,
     checkedAt,
   };
