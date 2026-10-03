@@ -46,4 +46,4 @@ Locally, without gitleaks on `PATH`, only the built-in patterns run and the step
 
 ## CI
 
-The workflow runs on every push and pull request, on Node 20.18.3 (the gate's minimum) and 24. The environment is clean by construction: a fresh runner, `actions/setup-node` without dependency cache, no build cache, no `.env` and no secrets. The job calls `node scripts/self-check.mjs` and `yarn install --immutable` runs inside it, as the `install` requirement. gitleaks is downloaded at a pinned version and its SHA-256 is verified; the checkout fetches the full history so that gitleaks sees every commit.
+The workflow runs on every push and pull request, on Node 20.19.0 (the template's minimum: Credo needs it; the bounty asks for 20.18.3 or later) and 24. The environment is clean by construction: a fresh runner, `actions/setup-node` without dependency cache, no build cache, no `.env` and no secrets. The job calls `node scripts/self-check.mjs` and `yarn install --immutable` runs inside it, as the `install` requirement. gitleaks is downloaded at a pinned version and its SHA-256 is verified; the checkout fetches the full history so that gitleaks sees every commit.
