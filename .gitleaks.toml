@@ -5,7 +5,7 @@
 # raw hex private keys, mnemonics), which the defaults do not recognise. Allowlists are narrow and documented: never
 # allowlist a whole test directory, and never add a real value here.
 
-title = "scaffold-hbar-verifiable-settlement"
+title = "scaffold-hbar-verifiable-certificates"
 
 [extend]
 useDefault = true

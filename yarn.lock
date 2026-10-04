@@ -1365,9 +1365,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hiero-did-sdk/registrar@patch:@hiero-did-sdk/registrar@npm%3A0.1.8#./.yarn/patches/@hiero-did-sdk-registrar-npm-0.1.8-e0816abed1.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+"@hiero-did-sdk/registrar@patch:@hiero-did-sdk/registrar@npm%3A0.1.8#./.yarn/patches/@hiero-did-sdk-registrar-npm-0.1.8-e0816abed1.patch::locator=verifiable-certificates%40workspace%3A.":
   version: 0.1.8
-  resolution: "@hiero-did-sdk/registrar@patch:@hiero-did-sdk/registrar@npm%3A0.1.8#./.yarn/patches/@hiero-did-sdk-registrar-npm-0.1.8-e0816abed1.patch::version=0.1.8&hash=d8fad2&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  resolution: "@hiero-did-sdk/registrar@patch:@hiero-did-sdk/registrar@npm%3A0.1.8#./.yarn/patches/@hiero-did-sdk-registrar-npm-0.1.8-e0816abed1.patch::version=0.1.8&hash=d8fad2&locator=verifiable-certificates%40workspace%3A."
   dependencies:
     "@hashgraph/sdk": ^2.78.0
     "@hiero-did-sdk/core": 0.1.8
@@ -4799,9 +4799,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+"async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::locator=verifiable-certificates%40workspace%3A.":
   version: 1.0.0
-  resolution: "async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::version=1.0.0&hash=05c6a0&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  resolution: "async-function@patch:async-function@npm%3A1.0.0#./.yarn/patches/async-function-npm-1.0.0-a81667ebcd.patch::version=1.0.0&hash=05c6a0&locator=verifiable-certificates%40workspace%3A."
   checksum: 57be3cf2e42516df5d9fd11537f473be5d6090620dcb3766a3acc135105c2af6c1296c42701803ac9f296f3ba99bededf318bf3b685912e240c196c8a5a0b04d
   languageName: node
   linkType: hard
@@ -4813,9 +4813,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+"async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::locator=verifiable-certificates%40workspace%3A.":
   version: 1.0.0
-  resolution: "async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::version=1.0.0&hash=97baef&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  resolution: "async-generator-function@patch:async-generator-function@npm%3A1.0.0#./.yarn/patches/async-generator-function-npm-1.0.0-14cf981d13.patch::version=1.0.0&hash=97baef&locator=verifiable-certificates%40workspace%3A."
   checksum: f57dece0c77f1132ece0145c2adf540d827068671b484f43309e19073bec1a223de5cef4a74230a2b51689d61f6fcd4a6e29433bc36476d2bf79e3174ab1c9f2
   languageName: node
   linkType: hard
@@ -7451,9 +7451,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::locator=scaffold-hbar-verifiable-settlement%40workspace%3A.":
+"generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::locator=verifiable-certificates%40workspace%3A.":
   version: 2.0.1
-  resolution: "generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::version=2.0.1&hash=0832bf&locator=scaffold-hbar-verifiable-settlement%40workspace%3A."
+  resolution: "generator-function@patch:generator-function@npm%3A2.0.1#./.yarn/patches/generator-function-npm-2.0.1-aed34a724a.patch::version=2.0.1&hash=0832bf&locator=verifiable-certificates%40workspace%3A."
   checksum: a47c7822e1f7a69b11cc0c3b54e8e4e140b921b3478cbf065ec0af97a714213510e54e85edd4453aa0ae15098f1f378ec0f07a5656fcf11f1c853722ab589216
   languageName: node
   linkType: hard
@@ -11057,16 +11057,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"scaffold-hbar-verifiable-settlement@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "scaffold-hbar-verifiable-settlement@workspace:."
-  dependencies:
-    hedera-harness: ^1.2.2
-    husky: ^9.1.6
-    lint-staged: ^15.2.10
-  languageName: unknown
-  linkType: soft
-
 "scheduler@npm:^0.28.0":
   version: 0.28.0
   resolution: "scheduler@npm:0.28.0"
@@ -12651,6 +12641,16 @@ __metadata:
   checksum: ae0123222c6df65b437669d63dfa8c36cee20a504101b2fcd97b8bf76f91259c17f9f2b4d70a1e3c6bbcee7f51b28392833adb6b2770b23b01abec84e369660b
   languageName: node
   linkType: hard
+
+"verifiable-certificates@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "verifiable-certificates@workspace:."
+  dependencies:
+    hedera-harness: ^1.2.2
+    husky: ^9.1.6
+    lint-staged: ^15.2.10
+  languageName: unknown
+  linkType: soft
 
 "vite-node@npm:3.2.4":
   version: 3.2.4

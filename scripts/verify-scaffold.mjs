@@ -21,7 +21,7 @@ const opt = name => (args.includes(name) ? args[args.indexOf(name) + 1] : undefi
 const cliVersion = opt("--cli") ?? "latest";
 const remote = opt("--remote");
 const keep = args.includes("--keep");
-const template = remote ?? "fmartns/scaffold-hbar-verifiable-settlement";
+const template = remote ?? "fmartns/scaffold-hbar-verifiable-certificates";
 
 const work = mkdtempSync(path.join(os.tmpdir(), "verify-scaffold-"));
 const project = "generated-app";

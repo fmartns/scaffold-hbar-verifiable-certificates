@@ -10,7 +10,7 @@ pinned by the repository). For `yarn self-check` and `yarn secrets:scan` you als
 ## 1. Scaffold and install
 
 ```bash
-npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement
+npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-certificates
 cd <project-name>
 yarn install     # if the CLI did not run it
 yarn test        # offline, no account needed: the whole flow against an in-memory Hedera
