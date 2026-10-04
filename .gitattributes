@@ -1,0 +1,4 @@
+# Check out text files with LF on every OS. solc embeds a hash of the source in the bytecode metadata, so a CRLF checkout
+# (Windows with core.autocrlf=true) compiles different bytecode than packages/sdk/generated records, and the codegen
+# staleness test fails. LF also keeps .env.example identical to the file create-scaffold-hbar generates.
+* text=auto eol=lf

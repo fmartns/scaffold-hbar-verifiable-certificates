@@ -3,9 +3,9 @@
 // Run it in CI on the template repository (`node scripts/validate-template.mjs`). A scaffolded project no longer contains
 // template.json: the CLI consumes and deletes it.
 //
-// The checks below mirror `TemplateManifestSchema` of create-scaffold-hbar 0.4.0 (src/types.ts @ 5732f5e). The CLI does
-// not export its schema, so this is a pinned reimplementation: the authoritative proof is running the real CLI
-// (`node scripts/verify-scaffold.mjs`). Revalidate both against the current CLI before the final submission (issue #19).
+// The checks below mirror `TemplateManifestSchema` of create-scaffold-hbar 0.4.1 (src/types.ts @ 5e05959, unchanged on
+// main @ eae5701). The CLI does not export its schema, so this is a pinned reimplementation: the authoritative proof is
+// running the real CLI (`node scripts/verify-scaffold.mjs`).
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -157,7 +157,9 @@ if (block.envVars?.length) {
       .flatMap(({ key, description }) => [`# ${description}`, `${key}=`, ""])
       .join("\n")
       .trimEnd() + "\n";
-  if (!existsSync(path.join(root, ".env.example")) || read(".env.example") !== generated) {
+  // Compare with LF endings: a Windows checkout with core.autocrlf=true has CRLF in the working tree, while the
+  // repository (and so the downloaded template) stores LF.
+  if (!existsSync(path.join(root, ".env.example")) || read(".env.example").replace(/\r\n/g, "\n") !== generated) {
     fail(".env.example differs from the file the CLI generates from envVars; regenerate it from template.json.");
   }
 }
