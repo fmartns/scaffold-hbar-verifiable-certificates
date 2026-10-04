@@ -18,15 +18,36 @@ A [scaffold-hbar](https://github.com/hedera-dev/scaffold-hbar) template. An acad
 stored on **HCS-1**; an **accreditation registry** contract says which academies are recognized for which course; and
 a second platform enrolls students in an advanced course from a zero-knowledge proof.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Academy as Hedera Academy (issuer)
+    actor Ana as Ana (holder)
+    participant Hedera as Hedera
+    participant B as Platform B (verifier)
+    actor Bob
+
+    Academy->>Hedera: store certificate.pdf as an HCS-1 file
+    Academy->>Ana: credential (course, grade 88, student id, document_sha256) + certificate.pdf
+    B->>Ana: Advanced Solidity needs Solidity Basics, grade ≥ 70, not revoked at T
+    Ana->>B: zero-knowledge proof that reveals only the course
+    B->>Hedera: resolve schema, definition and revocation state at T, then isAccredited at T
+    B-->>Ana: ENROLLED, without learning her name, 88 or student id
+    Bob->>B: a copy of Ana's PDF
+    B-->>Bob: DENIED, he has no credential and a copied one needs Ana's link secret
+    Academy->>Hedera: revoke Ana's certificate
+    B-->>Ana: DENIED now, still VALID "as of" a time before the revocation
+    Note over Hedera,B: If the accreditation authority withdraws the academy, even valid certificates stop qualifying from that moment
 ```
-Ana completes "Solidity Basics" with 88   ──▶  she receives a credential (in her wallet) and certificate.pdf
-Platform B: "Advanced Solidity needs Basics with grade ≥ 70, not revoked"
-Ana presents a proof  ──▶  Platform B learns: course = Solidity Basics, grade ≥ 70 = true   ──▶  ENROLLED
-                           Platform B never learns: her name, 88, her student id
-Bob presents a copy of Ana's PDF   ──▶  DENIED (he has no credential, and a copied credential needs Ana's link secret)
-The academy revokes Ana's certificate on Hedera   ──▶  DENIED now · still VALID "as of" before the revocation
-The accreditation authority withdraws the academy  ──▶  even valid certificates stop qualifying from that moment
-```
+
+<p align="center">
+  <a href="docs/assets/sample-certificate.pdf"><img src="docs/assets/sample-certificate.png" width="640" alt="Certificate of Completion: Solidity Basics, awarded to Ana Example, issued by Hedera Academy on 2026-10-03, with a QR code"></a>
+</p>
+<p align="center"><sub>
+  A real certificate from the Testnet run: <a href="docs/assets/sample-certificate.pdf">this PDF</a> (3.6 KB) is the HCS-1 file in topic
+  <a href="https://hashscan.io/testnet/topic/0.0.10836026">0.0.10836026</a>, and its SHA-256 <code>05e2bea4…d1f182</code> is that topic's memo.
+  It carries only what the holder accepts to make public; the grade and the student id stay in the credential.
+</sub></p>
 
 ## Quick start
 
@@ -64,15 +85,31 @@ In the console: **Issue certificate** (Ana, 88) → **Download PDF** → **ana a
 
 ## How it works
 
-```
-             Hedera (HCS, read through the Mirror Node)
-  did:hedera · schema · credential definition · revocation registry · revocation entries · certificate PDFs (HCS-1)
-        ▲ writes                       ▲ reads                                   ▲ reads
-  ┌─────┴──────────┐  credential  ┌────┴────────────┐   zero-knowledge proof  ┌─────┴──────────────────┐
-  │ Issuer (Credo) │ ───────────▶ │ Holder (Credo)  │ ──────────────────────▶ │ Platform B (Credo)     │
-  │ Hedera Academy │  + PDF       │ Ana's wallet    │                         │ decides enrollment     │
-  └────────────────┘              └─────────────────┘                         └────────────────────────┘
-                    accreditation authority ──▶ AccreditationRegistry (Solidity) ──▶ read by Platform B
+```mermaid
+flowchart LR
+    Issuer["Issuer: Hedera Academy<br/>Credo agent, Askar wallet"]
+    Holder["Holder: Ana<br/>Credo agent, link secret"]
+    Verifier["Platform B: verifier<br/>Credo agent, decides enrollment"]
+    Authority["Accreditation authority"]
+
+    subgraph Hedera["Hedera"]
+        direction TB
+        VDR["Consensus Service as Verifiable Data Registry<br/>did:hedera · schema · credential definition<br/>revocation registry · revocation entries"]
+        Files["HCS-1 files<br/>certificate PDFs, memo = SHA-256"]
+        Registry["Smart Contract Service<br/>AccreditationRegistry"]
+        Mirror["Mirror Node REST<br/>the read path"]
+    end
+
+    Issuer -- "credential + PDF" --> Holder
+    Holder -- "zero-knowledge proof" --> Verifier
+    Issuer -- "publish, revoke" --> VDR
+    Issuer -- "store each PDF" --> Files
+    Authority -- "accredit, withdraw" --> Registry
+    VDR --> Mirror
+    Files --> Mirror
+    Registry --> Mirror
+    Mirror -- "objects and revocation state at T,<br/>credentialDefinitions, isAccredited at T" --> Verifier
+    Mirror -. "objects to build proofs" .-> Holder
 ```
 
 | Question | Answer |
@@ -146,6 +183,7 @@ Check them yourself, no account needed:
 
 ```bash
 curl -s https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10836026            # memo = the PDF's SHA-256, no admin key
+sha256sum docs/assets/sample-certificate.pdf                                         # 05e2bea4…d1f182, the same hash
 curl -s https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10835836/messages   # the revocation entries a verifier replays
 curl -s https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.10837530/results # deploy + accredit
 ```
