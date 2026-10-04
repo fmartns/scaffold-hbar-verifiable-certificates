@@ -2,6 +2,22 @@
 
 Real errors met while building and running this template, with their cause and fix.
 
+## Scaffolding (`npm create scaffold-hbar`)
+
+**`create-scaffold-hbar requirements not met: Yarn is not installed`.** The CLI checks for `yarn` on `PATH` before it
+creates anything (this template supports Yarn only). Run `corepack enable` (no global install needed; the repository
+pins Yarn 3.2.3), or install Yarn ≥ 1.22, which delegates to the pinned release.
+
+**`Git user.name is not configured`.** The CLI makes the first commit; set `git config --global user.name` and
+`user.email`.
+
+**The CLI asks "Which Solidity framework?" or demands `forge`.** It could not read `template.json` from GitHub
+(anonymous API rate limit, or offline) and fell back to its generic choices; with `--yes` it would pick Foundry, which
+this template does not have. Choose **Hardhat** and **Yarn**, or pass `-s hardhat --package-manager yarn`.
+
+**`npm create scaffold-hbar@latest --template …` shows the template menu anyway.** npm consumed `--template` as its own
+option. Put `--` before it: `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-certificates`.
+
 ## Install and toolchain
 
 **`npm error 'node' is not recognized as an internal or external command` during `npm install` (Windows).**
@@ -71,6 +87,12 @@ over with a fresh `CERTIFICATES_DATA_DIR` and `yarn issuer:init`.
 
 **`… is stale: run \`yarn codegen\``** in the contract tests. The contract changed; regenerate
 `packages/sdk/generated/AccreditationRegistry.ts` and commit it.
+
+**The same test fails on Windows although nothing changed** (`matches the ABI and bytecode the SDK deploys`, the diff
+is only near the end of the bytecode). The checkout has CRLF line endings (`core.autocrlf=true`), and solc hashes the
+source into the bytecode metadata. `.gitattributes` forces LF; a checkout made before it existed keeps CRLF until the
+files are checked out again (clone again, or `git checkout-index --force --all` on a tree without local changes).
+`scripts/validate-template.mjs` compares `.env.example` ignoring line endings for the same reason.
 
 **`REGISTRY_FULL`.** A revocation registry holds `maximumCredentialNumber − 1` certificates (999). The template does
 not rotate registries; publish a new issuer on a fresh data directory, or add rotation.

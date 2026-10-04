@@ -350,7 +350,7 @@ All 20 gate items pass as of commit [`a49b8bb`](https://github.com/fmartns/scaff
 
 ### C.2 Pacote de submissão
 
-- [ ] **CHK-21** Link do **repositório público** (na `main`, no commit final congelado — anotar SHA). Candidato atual: [`a49b8bb`](https://github.com/fmartns/scaffold-hbar-verifiable-settlement/commit/a49b8bb86809bb2e9a9c1463f6d660068cbd594c) — **congelar apenas no momento do envio**, pois a `main` pode continuar avançando até lá.
+- [ ] **CHK-21** Link do **repositório público** (na `main`, no commit final congelado — anotar SHA). Repositório: <https://github.com/fmartns/scaffold-hbar-verifiable-certificates>; `main` em 2026-10-03: `6db7fc6` (histórico reescrito só para remover trailers de commit; a `a49b8bb` citada acima é do histórico anterior) — **congelar apenas no momento do envio**, pois a `main` pode continuar avançando até lá.
 - [x] **CHK-22** Link **Hashscan e/ou Mirror Node** da transação Testnet (CHK-14). Ver [submission-package.md §2](submission-package.md#2-testnet-evidence-gate-1314).
 - [ ] **CHK-23** **Dev-ex survey** preenchido (CHK-00e). **Pendente de você**: link ainda não encontrado (ver submission-package.md §5).
 - [x] **CHK-24** **Harness spec e validators** anexados (#25): [`.harness/`](../.harness/) no commit submetido.
@@ -400,10 +400,11 @@ Preencher a cada revalidação contra as fontes. A linha de **#20** é **obrigat
 
 | Data | Responsável | Contexto | Fontes reconferidas | Mudanças encontradas | Ação |
 |---|---|---|---|---|---|
-| 2026-09-18 | Claude Code (via WebFetch/`gh`) | Criação do documento | S1–S5 | — (baseline) | Ver limitações em 1.2 |
-| 2026-09-18 | Claude Code (execução do CLI) | Issue #4 — compatibilidade com `create-scaffold-hbar` | S4 (código + `npx` 0.4.0), npm | D-01 e D-02 resolvidos por execução ([scaffold-compat.md](scaffold-compat.md)) | Manifesto corrigido; forma com `--` |
+| 2026-09-18 | fmartns (via WebFetch/`gh`) | Criação do documento | S1–S5 | — (baseline) | Ver limitações em 1.2 |
+| 2026-09-18 | fmartns (execução do CLI) | Issue #4 — compatibilidade com `create-scaffold-hbar` | S4 (código + `npx` 0.4.0), npm | D-01 e D-02 resolvidos por execução ([scaffold-compat.md](scaffold-compat.md)) | Manifesto corrigido; forma com `--` |
 | _pendente_ | _____ | **Pré-submissão final — tarefa #20** (revalidar CLI em #19) | S1–S5 | | |
-| 2026-10-01 (parcial) | Claude Code (execução real) | #20 — checklist CHK-01–20/22/24/27–30 verificados contra o commit `a49b8bb`; ver [submission-package.md](submission-package.md) | S4 (CLI real, local + remoto), repositório próprio | GATE-03 falhava (LICENSE truncado, "Other" no GitHub) → corrigido. Nenhuma mudança encontrada em S1–S3/S5 **porque não foram reconferidas nesta passada** (ver abaixo) | LICENSE corrigido (#20, PR #64); demais evidências de gate anexadas |
+| 2026-10-01 (parcial) | fmartns (execução real) | #20 — checklist CHK-01–20/22/24/27–30 verificados contra o commit `a49b8bb`; ver [submission-package.md](submission-package.md) | S4 (CLI real, local + remoto), repositório próprio | GATE-03 falhava (LICENSE truncado, "Other" no GitHub) → corrigido. Nenhuma mudança encontrada em S1–S3/S5 **porque não foram reconferidas nesta passada** (ver abaixo) | LICENSE corrigido (#20, PR #64); demais evidências de gate anexadas |
+| 2026-10-03 | fmartns (execução real) | Revalidação final: código do `create-scaffold-hbar` 0.4.1 (npm `latest`) e do `main`, os 8 branches `templates/*` do `scaffold-hbar`, `hedera-harness` 1.2.2; `npm create scaffold-hbar@latest … -- --template …` real a partir do GitHub | S3, S4, S5 (S1 **não** relida nesta passada) | Schema do manifesto inalterado desde 0.4.0; novos IR-13 (fim de linha) e IR-14 (Hedera Skills) em [scaffold-compat.md](scaffold-compat.md); repositório renomeado para `scaffold-hbar-verifiable-certificates` | `.gitattributes`, página pública sem 500, runs 10–11 verdes ([submission-package.md](submission-package.md)) |
 
 **S1–S3 e S5 não foram reconferidas nesta linha** — nenhuma ferramenta de navegador está disponível nesta sessão para reabrir a página oficial do bounty. **CHK-00a/00b continuam pendentes de um humano** antes do envio: reabrir S1 no navegador e confirmar que prazo, gate e rubrica citados aqui não mudaram desde 2026-09-18.
 

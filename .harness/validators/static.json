@@ -66,7 +66,9 @@
     "required": [
       "README.md",
       "AGENTS.md",
+      "CLAUDE.md",
       "LICENSE",
+      ".gitattributes",
       ".env.example",
       "package.json",
       "yarn.lock",
@@ -126,8 +128,19 @@
         "document_sha256",
         "yarn check",
         "yarn harness:validate",
-        "AccreditationRegistry"
+        "AccreditationRegistry",
+        "never stores individual credential state",
+        "Private credential attributes are never published to Hedera",
+        "Verification resolves trusted state independently"
       ]
+    },
+    {
+      "file": "CLAUDE.md",
+      "contains": ["@AGENTS.md"]
+    },
+    {
+      "file": ".gitattributes",
+      "contains": ["eol=lf"]
     },
     {
       "file": ".gitignore",

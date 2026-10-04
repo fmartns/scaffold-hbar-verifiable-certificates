@@ -4,11 +4,13 @@ How this repository behaves as a `create-scaffold-hbar` template, what the CLI a
 
 | Field | Value |
 |---|---|
-| Validated on | **2026-09-18**; GitHub download step validated **2026-10-01** (#19) |
-| Against | `create-scaffold-hbar@0.4.0` (npm `latest`; source `hedera-dev/create-scaffold-hbar@5732f5e`, published 2026-09-04); GitHub-download run used `latest` resolving to `0.4.1` |
-| Base conventions | `hedera-dev/scaffold-hbar@5eb46ef` (`main`, `templates/blank-template`) |
-| Status | Structure and contract validated locally **and** via the real GitHub download (repository made public for #19; run #8 in [§7](#7-validation-record)) |
+| Validated on | **2026-10-03** (source re-read and real runs 10–11 in [§7](#7-validation-record)); first validated 2026-09-18 |
+| Against | `create-scaffold-hbar@0.4.1` (npm `latest`, published 2026-09-28; source `hedera-dev/create-scaffold-hbar@5e05959`). `main@eae5701` adds only a Foundry warning and the `TEMPLATE_REPO` rename; `src/types.ts` (the manifest schema) is unchanged since 0.4.0 |
+| Base conventions | `hedera-dev/scaffold-hbar@2db3163` (`main`) and its eight `templates/*` branches (blank-template, bridge, cross-chain-dca, hedera-demo, oracles, payments-scheduler, tokenize-subscriptions, x402-pay-per-use) |
+| Status | Validated through the real GitHub download of `main` (run 10) and the local export of the working tree (run 11), on Windows 11 |
 | **Revalidate** | **Before the final submission (#20).** The CLI changes often (0.1.0 → 0.4.0 in five months) — [§9](#9-revalidation-checklist-for-19) |
+
+**Name.** The repository was renamed on 2026-10-03 from `fmartns/scaffold-hbar-verifiable-settlement` to `fmartns/scaffold-hbar-verifiable-certificates`; GitHub redirects the old name (web, git and API), and runs 1–10 below used it.
 
 **Layout.** Three workspaces: `packages/hardhat`, `packages/nextjs`, `packages/sdk` (§6). The CLI behavior below is independent of what the workspaces contain.
 
@@ -94,6 +96,8 @@ Behaviors that are not evident from the repository layout and that the template 
 | **IR-10** | The user needs Git identity (`user.name`, `user.email`) configured, or the CLI stops at the system check | `system-validation.ts` |
 | **IR-11** | Yarn-only: for npm the CLI normalizes `hardhat` and `nextjs` package scripts but not `sdk`; the manifest therefore offers `yarn` only | `normalizeWorkspacePackagesForNpm` |
 | **IR-12** | The Hedera Skills install is **on by default with `--yes`**; it is separate from this template and needs the network | `main.ts`, `install-hedera-skills.ts` |
+| **IR-13** | Text files must be LF in every checkout. giget's tarball is LF, but a Windows **clone** with `core.autocrlf=true` gets CRLF: solc hashes the source into the bytecode metadata (the codegen staleness test fails) and `.env.example` no longer equals the generated file. `.gitattributes` (`* text=auto eol=lf`) fixes it; the validator also compares ignoring line endings | `yarn self-check` in a Windows clone, 2026-10-03: bytecode differed only at byte 4,824 of 4,910 (CBOR metadata) |
+| **IR-14** | Hedera Skills adds `.agents/`, `agent/`, `skills-lock.json` (committed by the CLI) and `.claude/skills/` (absolute symlinks, kept out of git by this template's `.gitignore`). None of it may break lint, tests or the secret scan | Run 10: all gates pass with the skills installed |
 
 ## 5. Divergences between documentation, CLI and requests
 
@@ -192,6 +196,8 @@ Runs 1–8 predate the 2026-10-03 pivot to certificates; the layout and flags (`
 | 7 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (0.4.1), local export, main at `6652637` + the credentials/audit/dashboard/issuer-console/testnet-validation work merged since run 6 | ✅ `node scripts/verify-scaffold.mjs`: all 15 structural checks, `yarn setup` fails cleanly without credentials (`MISSING_ENV`, no secret printed), `yarn harness:validate` → `passed=true`, 0 findings. Also found and fixed a real defect: `.claude/` (local AI assistant worktrees) was not gitignored, so `git ls-files -co` included it and the export crashed trying to `cpSync` a nested worktree as a file — fixed by ignoring `.claude/` and `.cursor/` |
 | 8 | 2026-10-01 (#19): Node 24.15.0, `create-scaffold-hbar@latest` (`latest` → 0.4.1), **real GitHub download** against the now-public repository | ✅ `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest`: the literal flow a bounty judge runs (`npx create-scaffold-hbar generated-app --template fmartns/scaffold-hbar-verifiable-settlement ...`) fetched the manifest and template anonymously from GitHub, scaffolded, installed, formatted, committed; all 15 structural checks, `yarn setup` fails cleanly without credentials, `yarn harness:validate` → `passed=true`, 0 findings. §8's "not verified yet" item for the download/manifest-lookup step is now closed |
 | 9 | 2026-10-03, after the pivot to certificates: Node 24.19.0 on Windows, `create-scaffold-hbar@latest`, local export of a clean clone of `feat/anoncreds-certificates` at `0b6b42c` | ✅ `node scripts/verify-scaffold.mjs`: all 15 structural checks (three workspaces, `engines.node >=20.19.0`, template.json consumed), `yarn setup` exits 1 naming the missing variables with no secret printed, `yarn harness:validate` → `passed=true`, `findings=0` (install with the native Askar/AnonCreds/zstd binaries, lint, types, tests, build). The `--remote` run waits for the merge to `main` |
+| 10 | 2026-10-03: **real GitHub download of `main` (`c28b638`; the same tree is commit `6db7fc6` after a history rewrite that only dropped commit trailers)**, Windows 11, Node 24.19.0, npm 11.7.0, Yarn via Corepack. Literal command `npm create scaffold-hbar@latest certs-app -- --template fmartns/scaffold-hbar-verifiable-settlement --yes` (published CLI 0.4.1, Hedera Skills **on**) | ✅ capabilities read from GitHub (no framework/PM prompt), download, install, Hedera Skills, format, first commit, custom outro. In the project: `node scripts/self-check.mjs --skip manifest` → every requirement PASS (gitleaks 8.30.1 included). Route probe without `.env`: `/` 200, `/api/health` 200, API routes typed 400, unknown 404 — and **`/certificate/<id>` 500** (fixed for run 11) |
+| 11 | 2026-10-03: same CLI and command, `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` = an LF export of the final working tree (staged into a temporary index, user files excluded): `.gitattributes`, `CLAUDE.md`, the certificate-page fix, docs | ✅ scaffold exit 0; `template.json` consumed; self-check every requirement PASS; `yarn harness:validate` → `passed=true`, `findings=0` (install, lint, types, test, build); `/certificate/<id>` now 200 with an explanation instead of a 500 |
 | E1 | **Original** `template.json` (initial commit) through the real CLI | ❌ crashes with `ZodError: Required` at `processTemplateManifest`, exit 1 → **IR-1** |
 | E2 | Fixed manifest, but the GitHub manifest lookup returns 404 (repo private/unpushed), `--yes` without `-s` | ❌ the CLI selects Foundry and demands `forge` → **IR-2** |
 | N1 | npm 11.16.0 argv logging | `--template` without `--` is consumed by npm → **DV-3** |
@@ -201,8 +207,8 @@ Known benign output: Yarn 3.2.3 prints `YN0066 typescript … Cannot apply hunk 
 ## 8. What is not verified yet
 
 - **The GitHub download step (`giget`) and the manifest lookup (step 3)** are now verified — see run #8 in [§7](#7-validation-record). The repository was made public on 2026-10-01 for this; whether `giget` can fetch a **private** repository with a token (`GIGET_AUTH`) remains untested and is not needed now that the repo is public (also required by the bounty gate, GATE-02).
-- Windows and macOS. Only Linux (WSL2) was used.
-- The interactive path (prompts). Only the flag-driven path was run.
+- macOS. Linux (WSL2, runs 1–8) and Windows 11 (runs 9–11) were used.
+- The interactive path (prompts). Runs 10–11 used the literal `npm create … -- --template …` command with `--yes` (defaults, Hedera Skills included), which resolves the same capabilities from `template.json`.
 - `npm` as package manager: unsupported by design (IR-11).
 
 ## 9. Revalidation checklist for #19
@@ -211,7 +217,7 @@ The CLI is updated frequently; this contract is valid for `0.4.0`. Before the fi
 
 1. `npm view create-scaffold-hbar version` and compare with `0.4.0`. If newer, read the diff of `src/types.ts`, `src/tasks/copy-template-files.ts` and `src/utils/template-capabilities.ts` against `5732f5e`.
 2. Update the pinned checks in `scripts/validate-template.mjs` if the schema changed; run it.
-3. Push (the repository is public since 2026-10-01), then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-settlement --cli latest` on **Node 20.19** and on the current Node LTS.
-4. Run the literal `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-settlement` interactively once (prompts must not offer Foundry or npm).
+3. Push (the repository is public since 2026-10-01), then run `node scripts/verify-scaffold.mjs --remote fmartns/scaffold-hbar-verifiable-certificates --cli latest` on **Node 20.19** and on the current Node LTS.
+4. Run the literal `npm create scaffold-hbar@latest -- --template fmartns/scaffold-hbar-verifiable-certificates` interactively once (prompts must not offer Foundry or npm).
 5. Re-test the form without `--` and update DV-3/D-02 if npm or the CLI changed how the flag is delivered.
 6. Update the date and CLI version at the top of this file and in [bounty-rules.md](bounty-rules.md)'s revalidation log.

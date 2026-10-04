@@ -204,6 +204,14 @@ would need a custom tails service in every holder and adds nothing a hash check 
 - `@hiero-did-sdk/registrar` 0.1.8 waits for a new DID with a time window frozen at the start of the wait; when the
   local clock lags consensus, the DID never appears and creation times out. A `yarn patch`
   (`.yarn/patches/@hiero-did-sdk-registrar-*.patch`) makes the window move.
+- Not Hedera-specific: `async-function`, `generator-function` and `async-generator-function` (pulled in by
+  `get-intrinsic` inside Next.js's own server) export a `module-sync` condition that points to an ESM-only build. On
+  Node 20.19 Next.js's require hook resolves it and crashes `GET /` and `/api/health` with `ERR_REQUIRE_ESM` (Node 24 is
+  unaffected). Three `yarn patch`es (`.yarn/patches/{async-function,generator-function,async-generator-function}-*.patch`)
+  drop that condition so the packages load their CommonJS `index.js`.
+
+Each patch is wired through `resolutions` in the root `package.json`; remove it once the upstream release fixes the
+problem.
 
 **D7 — Issuance by default, one registry.** Every index of the registry starts as "issued". Capacity is
 `maximumCredentialNumber − 1` (AnonCreds indexes run from 1); the template stops with `REGISTRY_FULL` and does not rotate
