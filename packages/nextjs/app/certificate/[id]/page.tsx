@@ -18,8 +18,23 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   try {
     certificate = await (await certificateService()).publicCertificate(id);
   } catch (error) {
-    if (error instanceof CertificateError && error.code === "NOT_FOUND") notFound();
-    throw error;
+    if (!(error instanceof CertificateError)) throw error;
+    // Without a published issuer there is no certificate to show.
+    if (error.code === "NOT_FOUND" || error.code === "ISSUER_NOT_INITIALIZED") notFound();
+    // A server that is not configured, or a Mirror Node that does not answer: explain instead of a bare 500.
+    return (
+      <main className={styles.main} style={{ maxWidth: 820 }}>
+        <section className={styles.panel}>
+          <h1>Certificate unavailable</h1>
+          <p className={styles.error} role="alert">
+            {error.message}
+          </p>
+          <p className={styles.muted}>
+            The server could not load this certificate. Run <code>yarn setup</code> to check the environment.
+          </p>
+        </section>
+      </main>
+    );
   }
 
   return (

@@ -32,6 +32,7 @@ wrong one, and a test could reach the network.
 | CLI | `cli/setup.test.ts` | exit codes, JSON output, published issuer or the next command |
 | API boundary | `nextjs/app/api/_lib/server.test.ts` | typed errors → HTTP status; unexpected errors never leak their text; holder allow-list |
 | Console | `nextjs/app/_components/PlatformPanel.test.tsx`, `app/_lib/api.test.ts` | what Platform B asked for, received and never received; denial without a proof; historical query in UTC seconds; client error mapping |
+| Public certificate page | `nextjs/app/certificate/[id]/page.test.tsx` | public data and the HCS-1 integrity check, never a validity claim; unknown certificate or unpublished issuer → 404; a typed failure (no `.env`, Mirror Node down) is explained instead of a 500; unexpected errors go to the error boundary |
 
 ## Commands
 
